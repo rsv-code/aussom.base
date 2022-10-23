@@ -1,0 +1,243 @@
+/*
+ * Copyright 2021 Austin Lehman
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+include reflect;
+
+/**
+ * The test class implements aussom unit test framework cunit.
+ */
+class test {
+	private tests = [];
+	private passed = 0;
+	private failed = 0;
+	
+	private name = "";
+	private silent = false;
+
+	/**
+	 * Public default constructor.
+	 */
+	public test() { }
+
+	/**
+	 * Sets the name of the unit test suite.
+	 * @p Name is a string with the test name to set.
+	 * @r This object.
+	 */
+	public setName(string Name = "") { this.name = Name; return this; }
+
+	/**
+	 * Gets the name of the unit test suite.
+	 * @r A string with the test name.
+	 */
+	public getName() { return this.name; }
+
+	/**
+	 * Sets the silent flag.
+	 * @p Silent is a bool with true for silent and false for not.
+	 * @r This object.
+	 */
+	public setSilent(bool Silent) { this.silent = Silent; return this; }
+
+	/**
+	 * Gets the slient flag.
+	 * @r A bool with true for silent and false for not.
+	 */
+	public getSlient() { return this.silent; }
+
+	/**
+	 * Adds a test function to the test suite.
+	 * @p TestName is a string with the test name.
+	 * @p ToCall is a callback with the function to call for the test.
+	 * @p DieOnFail is a boolean that when set to true will make the
+	 * unit test stop on failure. Default is false.
+	 * @r This object.
+	 */
+	public add(string TestName, callback ToCall, bool DieOnFail = false) {
+		t = {};
+		t.name = TestName;
+		t.cb = ToCall;
+		t.dieOnFail = DieOnFail;
+		this.tests @= t;
+		return this;
+	}
+
+	/**
+	 * Runs the test suite.
+	 * @r This object.
+	 */
+	public run() {
+		if(!this.silent) {
+			c.print("Running Test [")
+				.print(" " + this.name + " ")
+				.println("]:")
+			;
+		}
+	
+		for(t : this.tests) {
+			if(!this.silent) {
+				c.print(" ***")
+					.print(" " + t['name'] + " ")
+					.print("... ")
+				;
+			}
+			try {
+				res = t.cb.call();
+				if(res == true) {
+					this.passed++;
+					if(!this.silent) { c.println("PASSED"); }
+				} else {
+					this.failed++;
+					if(!this.silent) { c.println("FAILED"); }
+					if(t['dieOnFail']) { break; }
+				}
+			} catch(e) {
+				this.failed++;
+				if(!this.silent) {
+					c.println("FAILED")
+						.err(e.getText() + "\n" + e.getStackTrace())
+					;
+					if(t['dieOnFail']) { break; }
+				}
+			}
+		}
+		
+		if(!this.silent) { this.printResult(); }
+		return this;
+	}
+
+	/**
+	 * Produces a map with the test results including name,
+	 * total, number ran, number passed, and number failed.
+	 * @r A map with the results.
+	 */
+	public getResults() {
+		res = {};
+		res['name'] = this.name;
+		res['total'] = #this.tests;
+		res['ran'] = this.passed + this.failed;
+		res['passed'] = this.passed;
+		res['failed'] = this.failed;
+		return res;
+	}
+
+	/**
+	 * Expect helper function compares two items for equality.
+	 * @p Item is the first item to compare.
+	 * @p ToBe is the second item to compare.
+	 * @r A bool with true if equal and false for not.
+	 */
+	public expect(Item, ToBe) { if(Item == ToBe) { return true; } return false; }
+
+	/**
+	 * Expect helper function expects value to not be null.
+	 * @p Item is the item to check.
+	 * @r A bool with true if not null and false for not.
+	 */
+	public expectNotNull(Item) { if(Item == null) { return false; } return true; }
+
+	/**
+	 * Expect helper function expects value to be null.
+	 * @p Item is the item to check.
+	 * @r A bool with true if null and false if not.
+	 */
+	public expectNull(Item) { if(Item == null) { return true; } return false; }
+
+	/**
+	 * Expect helper function expects the provided item to be a string.
+	 * @p Item is the item to check.
+	 * @r A bool with true if the item is a string and false if not.
+	 */
+	public expectString(Item) { if(lang.type(Item) == "string") { return true; } return false; }
+
+	/**
+	 * Expect helper function expects the provided item to be a bool.
+	 * @p Item is the item to check.
+	 * @r A bool with true if the item is a bool and false if not.
+	 */
+	public expectBool(Item) { if(lang.type(Item) == "bool") { return true; } return false; }
+
+	/**
+	 * Expect helper function expects the provided item to be an int.
+	 * @p Item is the item to check.
+	 * @r A bool with true if the item is a int and false if not.
+	 */
+	public expectInt(Item) { if(lang.type(Item) == "int") { return true; } return false; }
+
+	/**
+	 * Expect helper function expects the provided item to be a double.
+	 * @p Item is the item to check.
+	 * @r A bool with true if the item is a double and false if not.
+	 */
+	public expectDouble(Item) { if(lang.type(Item) == "double") { return true; } return false; }
+
+	/**
+	 * Expect helper function expects the provided item to be a type of number.
+	 * @p Item is the item to check.
+	 * @r A bool with true if the item is a type of number and false if not.
+	 */
+	public expectNumber(Item) { if((lang.type(Item) == "int")||(lang.type(Item) == "double")) { return true; } return false; }
+
+	/**
+	 * Expect helper function expects the provided item to be a list.
+	 * @p Item is the item to check.
+	 * @r A bool with true if the item is a list and false if not.
+	 */
+	public expectList(Item) { if(lang.type(Item) == "list") { return true; } return false; }
+
+	/**
+	 * Expect helper function expects the provided item to be a map.
+	 * @p Item is the item to check.
+	 * @r A bool with true if the item is a map and false if not.
+	 */
+	public expectMap(Item) { if(lang.type(Item) == "map") { return true; } return false; }
+
+	/**
+	 * Expect helper function expects the provided item to be an object.
+	 * @p Item is the item to check.
+	 * @r A bool with true if the item is an object and false if not.
+	 */
+	public expectObject(Item, string ClassName) { if(lang.type(Item) == ClassName) { return true; } return false; }
+
+	/**
+	 * Expect helper function expects the provided item to be a callback.
+	 * @p Item is the item to check.
+	 * @r A bool with true if the item is a callback and false if not.
+	 */
+	public expectCallback(Item) { if(lang.type(Item) == "callback") { return true; } return false; }
+
+	/**
+	 * Prints the test results to standard output.
+	 * @r This object.
+	 */
+	private printResult() {
+		c.println("")
+			.print("TOTAL:")
+			.print(" " + (#this.tests) + " ")
+			.print("RAN:")
+			.print(" " + (this.passed + this.failed) + " ")
+			.print("PASSED:")
+			.print(" " + this.passed + " ")
+		;
+		if(this.failed > 0) {
+			c.print("FAILED:")
+				.print(" " + this.failed + " ")
+			;
+		}
+		c.println("\n");
+		return this;
+	}
+}

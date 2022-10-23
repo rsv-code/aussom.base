@@ -1,0 +1,580 @@
+/*
+ * Copyright 2021 Austin Lehman
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+
+/**
+ * Implements bool datatype methods.
+ */
+extern class bool : com.aussom.types.AussomBool {
+    /**
+     * Converts the bool value to int.
+     * @r An int with 1 if true and 0 if false.
+     */
+	public extern toInt();
+
+	/**
+     * Converts the bool value to double.
+     * @r A double with 1.0 if true and 0.0 if false.
+     */
+	public extern toDouble();
+
+	/**
+     * Converts the boolean value to string.
+     * @r A string with 'true' or 'false'.
+     */
+	public extern toString();
+
+	/**
+     * Compares the value to the provided value.
+     * @r An int value with the value 0 if this == Val, a value less than
+     * 0 if !this && Val, and a value greater than 0 if this && !Val.
+     */
+	public extern compare(bool Val);
+
+	/**
+     * Parses the provided string value and sets the bool value.
+     * @p Val is a string with 'true' or 'false'.
+     * @r This object.
+     */
+	public extern parse(string Val);
+
+	/**
+     * Converts the value to a JSON encoded string.
+     * @r A JSON encoded string.
+     */
+	public extern toJson();
+
+	/**
+     * Serializes the data into a structure.
+     * @r A packed string.
+     */
+	public extern pack();
+}
+
+/**
+ * Static class Bool implements functions the operate on
+ * bool data types.
+ */
+static extern class Bool : com.aussom.stdlib.SBool {
+    /**
+     * Parses the provided string and returns the bool value.
+     * @p Val is a string with the bool value.
+     * @r A bool value.
+     */
+	public extern parse(string Val);
+}
+
+/**
+ * Implements int datatype methods.
+ */
+extern class int : com.aussom.types.AussomInt {
+    /**
+     * Converts the int to double.
+     * @r A double with the value.
+     */
+	public extern toDouble();
+
+	/**
+     * Converts the int to a bool.
+     * @r A bool with true if non-zero and false if zero.
+     */
+	public extern toBool();
+
+	/**
+     * Converts the int to it's string representation.
+     * @r A string with the value.
+     */
+	public extern toString();
+
+	/**
+     * Compares the value to the provided value.
+     * @r An int with the value 0 if this == Val. A value less than 0 if this < Val,
+     * and a value greater than 0 if this > Val.
+     */
+	public extern compare(int Val);
+
+	/**
+     * Returns the number of zero bits preceding the highest-order
+     * one-bit in the two's complement binary representation of the value.
+     * @r An integer with number of zeros.
+     */
+	public extern numLeadingZeros();
+
+	/**
+     * Returns the number of zero bits following the lowest-order
+     * one-bit in the two's complement binary representation of the value.
+     * @r An integer with the number of zeros.
+     */
+	public extern numTrailingZeros();
+
+	/**
+     * Returns the value by reversing the bits of the value.
+     * @r An int with the reversed bit order.
+     */
+	public extern reverse();
+
+	/**
+     * Returns the value by reversing the bytes of the value.
+     * @r An int with the reversed byte order.
+     */
+	public extern reverseBytes();
+
+	/**
+     * Rotates the value the number of bits provided to the left.
+     * @r An int with the rotated bits.
+     */
+	public extern rotateLeft(int Distance);
+
+	/**
+     * Rotates the value the number of bits provided to the right.
+     * @r An int with the rotated bits.
+     */
+	public extern rotateRight(int Distance);
+
+	/**
+     *
+     */
+	public extern signum();
+
+	/**
+     *
+     */
+	public extern toBinary();
+
+	/**
+     *
+     */
+	public extern toHex();
+
+	/**
+     *
+     */
+	public extern toOctal();
+
+	/**
+     *
+     */
+	public extern parse(string Str, int Radix = null);
+
+	/**
+     *
+     */
+	public extern toJson();
+
+	/**
+     *
+     */
+	public extern pack();
+}
+
+/**
+ * Static class Int implements functions the operate on
+ * int data types.
+ */
+static extern class Int : com.aussom.stdlib.SInt {
+    /**
+     *
+     */
+	public extern maxVal();
+
+	/**
+     *
+     */
+	public extern minVal();
+
+	/**
+     *
+     */
+	public extern parse(string Str, int Radix = null);
+}
+
+/**
+ * Implements double datatype methods.
+ */
+extern class double : com.aussom.types.AussomDouble {
+	public extern toInt();
+	public extern toBool();
+	public extern toString();
+	public extern compare(double Val2);
+	public extern isInfinite();
+	public extern isNan();
+	public extern parse(string Val);
+	public extern toHex();
+	public extern toJson();
+	public extern pack();
+}
+
+/**
+ * Static class Double implements functions the operate on
+ * double data types.
+ */
+static extern class Double : com.aussom.stdlib.SDouble {
+	public extern maxExp();
+	public extern maxVal();
+	public extern minExp();
+	public extern minNormal();
+	public extern minVal();
+	public extern nanVal();
+	public extern negInfinity();
+	public extern posInfinity();
+	public extern size();
+	public extern parse(string Val);
+}
+
+/**
+ * Implements string datatype methods.
+ */
+extern class string : com.aussom.types.AussomString {
+	public extern charAt(int Index);
+	public extern compare(string Str);
+	public extern compareICase(string Str);
+	public extern concat(string Str);
+	public extern contains(string Needle);
+	public extern endsWith(string Suffix);
+	public extern equals(string Str);
+	public extern equalsICase(string Str);
+	public extern indexOf(string Needle);
+	public extern indexOfStart(string Needle, int StartIndex);
+	public extern isEmpty();
+	public extern lastIndexOf(string Needle);
+	public extern lastIndexOfStart(string Needle, int StartIndex);
+	public extern length();
+	public extern matches(string Regex);
+	public extern replace(string Find, string Replace);
+	public extern replaceFirstRegex(string Regex, string Replace);
+	public extern replaceRegex(string Regex, string Replace);
+	public extern split(string Delim, bool AllowBlanks = false);
+	public extern startsWith(string Prefix);
+	public extern substr(int Index, int EndIndex = null);
+	public extern toLower();
+	public extern toUpper();
+	public extern trim();
+	public extern toJson();
+	public extern pack();
+}
+
+/**
+ * Implements list datatype methods.
+ */
+extern class list : com.aussom.types.AussomList {
+	public extern add(ItemToAdd);
+	public extern addAll(list ListToAdd);
+	public extern addAllAt(list ListToAdd, int Index);
+	public extern clear();
+	public extern clone();
+	public extern contains(Item);
+	public extern containsObjRef(Item);
+	public extern get(int Index);
+	public extern indexOf(Item);
+	public extern isEmpty();
+	public extern remove(Item);
+	public extern removeAt(int Index);
+	public extern removeAll(list ListToRemove);
+	public extern retainAll(list ListToRetain);
+	public extern set(int Index, Item);
+	public extern size();
+	public extern subList(int StartIndex, int EndIndex);
+	public extern sort();
+	public extern sortAsc();
+	public extern join(string Glue);
+	public extern sortCustom(callback OnCompare);
+	public extern toJson();
+	public extern pack();
+}
+
+/**
+ * Implements map datatype methods.
+ */
+extern class map : com.aussom.types.AussomMap {
+	public extern clear();
+	public extern containsKey(string Key);
+	public extern containsVal(Val);
+	public extern get(string Key);
+	public extern isEmpty();
+	public extern keySet();
+	public extern put(string Key, Val);
+	public extern putAll(map ToAdd);
+	public extern putIfAbsent(string Key, Val);
+	public extern remove(string Key);
+	public extern size();
+	public extern values();
+	public extern toJson();
+	public extern pack();
+}
+
+/**
+ * Implements object datatype methods.
+ */
+extern class object : com.aussom.types.AussomObject {
+	public extern toJson();
+	public extern pack();
+}
+
+/**
+ * Implements callback datatype methods.
+ */
+extern class callback : com.aussom.types.AussomCallback {
+	public call(...) { return this._call(etc); }
+	private extern _call(list args);
+}
+
+/**
+ * Implements null datatype methods.
+ */
+extern class cnull : com.aussom.types.AussomNull {
+	public extern toJson();
+	public extern pack();
+}
+
+	    
+/*
+ * exception
+ */
+extern class exception : com.aussom.types.AussomException {
+	// Getters
+	public extern getLineNumber();
+	public extern getExceptionType();
+	public extern getId();
+	public extern getText();
+	public extern getDetails();
+	public extern getStackTrace();
+	
+	public printStackTrace() { c.println(this.getStackTrace()); }
+	
+	public toString() {
+		estr = "line " + this.getLineNumber() + ": " + this.getExceptionType() + " Exception. [" + this.getId() + "] :: " + this.getDetails();
+		estr += "\n" + this.getStackTrace();
+		return estr;
+	}
+}
+
+	    
+/*
+ * console
+ */
+static extern class c : com.aussom.stdlib.console {
+	// Console functions
+	public log(Content) { this._log(Content); return this; }
+	public info(Content) { this._info(Content); return this; }
+	public warn(Content) { this._warn(Content); return this; }
+	public err(Content) { this._err(Content); return this; }
+	public print(Content) { this._print(Content); return this; }
+	public println(Content) { this._println(Content); return this; }
+	
+	// Chained extern functions
+	private extern _log(Content);
+	private extern _info(Content);
+	private extern _warn(Content);
+	private extern _err(Content);
+	private extern _print(Content);
+	private extern _println(Content);
+}
+
+	    
+/*
+ * date
+ */
+extern class date : com.aussom.stdlib.ADate {
+	// Create new date.
+	public date(int Mills = null) {
+		return this.newDate(Mills);
+	}
+	public extern newDate(int Mills = null);
+	
+	public extern getHours();
+	public extern getMinutes();
+	public extern getSeconds();
+	public extern getTime();
+	
+	// Chained
+	public setHours(int Hours) { this._setHours(Hours); return this; }
+	public setMinutes(int Minutes) { this._setMinutes(Minutes); return this; }
+	public setSeconds(int Seconds) { this._setSeconds(Seconds); return this; }
+	public setTime(int TimeMills) { this._setTime(TimeMills); return this; }
+	
+	public extern toString();
+	public extern parse(string DateString, string DateFormat);
+	public extern format(string DateFormat = "yyyy-MM-dd HH:mm:ss.SSS Z");
+	public extern isEpoch();
+	
+	// Chained extern functions
+	private extern _setHours(int Hours);
+	private extern _setMinutes(int Minutes);
+	private extern _setSeconds(int Seconds);
+	private extern _setTime(int TimeMills);
+}
+
+	    
+/*
+ * charset
+ */
+enum charset {
+	us_ascii;
+	iso_8859_1;
+	utf_8;
+	utf_16be;
+	utf_16le;
+	utf_16;
+}
+
+	    
+/*
+ * byte order
+ */
+enum byteOrder {
+	big;
+	little;
+}
+
+	    
+/*
+ * buffer
+ */
+extern class buffer : com.aussom.stdlib.ABuffer {
+	public buffer(int Size = 1024) {
+		return this.newBuffer(Size);
+	}
+	private extern newBuffer(int Size = 1024);
+	
+	public extern size();
+	public clear() { this._clear(); return this; }
+	
+	// Moves cursor to provided position
+	public writeSeek(int Index) { this._writeSeek(Index); return this; }
+	public readSeek(int Index) { this._readSeek(Index); return this; }
+	
+	// address
+	public addString(string Str, string Charset = "utf_8") { this._addString(Str, Charset); return this; }
+	public addByte(int Byte) { this._addByte(Byte); return this; }
+	public addUByte(int Byte) { this._addUByte(Byte); return this; }
+	public addShort(int Short, string ByteOrder = "big") { this._addShort(Short, ByteOrder); return this; }
+	public addUShort(int Short, string ByteOrder = "big") { this._addUShort(Short, ByteOrder); return this; }
+	public addInt(int Int, string ByteOrder = "big") { this._addInt(Int, ByteOrder); return this; }
+	public addUInt(int Int, string ByteOrder = "big") { this._addUInt(Int, ByteOrder); return this; }
+	public addLong(int Long, string ByteOrder = "big") { this._addLong(Long, ByteOrder); return this; }
+	public addFloat(double Float, string ByteOrder = "big") { this._addFloat(Float, ByteOrder); return this; }
+	public addDouble(double Double, string ByteOrder = "big") { this._addDouble(Double, ByteOrder); return this; }
+	
+	public extern getWriteCursor();
+	public extern getReadCursor();
+	public extern getString(string Charset = "utf_8");
+	public extern getStringAt(int Length, int Index = -1, string Charset = "utf_8");
+	public extern getByte(int Index = -1);
+	public extern getUByte(int Index = -1);
+	public extern getShort(int Index = -1, string ByteOrder = "big");
+	public extern getUShort(int Inex = -1, string ByteOrder = "big");
+	public extern getInt(int Index = -1, string ByteOrder = "big");
+	public extern getUInt(int Index = -1, string ByteOrder = "big");
+	public extern getLong(int Index = -1, string ByteOrder = "big");
+	public extern getFloat(int Index = -1, string ByteOrder = "big");
+	public extern getDouble(int Index = -1, string ByteOrder = "big");
+	
+	public extern setString(string Str, string Charset = "utf_8");
+	public extern setStringAt(int Index, string Str, string Charset = "utf_8");
+	
+	// chained
+	public setByte(int Index, int Byte, string ByteOrder = "big") { this._setByte(Index, Byte, ByteOrder); return this; }
+	public setUByte(int Index, int Byte, string ByteOrder = "big") { this._setUByte(Index, Byte, ByteOrder); return this; }
+	public setShort(int Index, int Short, string ByteOrder = "big") { this._setShort(Index, Short, ByteOrder); return this; }
+	public setUShort(int Index, int Short, string ByteOrder = "big") { this._setUShort(Index, Short, ByteOrder); return this; }
+	public setInt(int Index, int Int, string ByteOrder = "big") { this._setInt(Index, Int, ByteOrder); return this; }
+	public setUInt(int Index, int Int, string ByteOrder = "big") { this._setUInt(Index, Int, ByteOrder); return this; }
+	public setLong(int Index, int Long, string ByteOrder = "big") { this._setLong(Index, Long, ByteOrder); return this; }
+	public setFloat(int Index, double Float, string ByteOrder = "big") { this._setFloat(Index, Float, ByteOrder); return this; }
+	public setDouble(int Index, double Float, string ByteOrder = "big") { this._setDouble(Index, Float, ByteOrder); return this; }
+	
+	public copyFrom(int DestIndex, object Buffer, int SrcIndex = -1, int Length = -1) { this._copyFrom(DestIndex, Buffer, SrcIndex, Length); return this; }
+	public copyTo(int SrcIndex, object Buffer, int DestIndex = -1, int Length = -1) { this._copyTo(SrcIndex, Buffer, DestIndex, Length); return this; }
+	
+	// Binary display functions
+	public extern byteToBinary(int Index);
+	public extern shortToBinary(int Index, string ByteOrder = "big");
+	public extern intToBinary(int Index, string ByteOrder = "big");
+	public extern longToBinary(int Index, string ByteOrder = "big");
+	public extern floatToBinary(int Index, string ByteOrder = "big");
+	public extern doubleToBinary(int Index, string ByteOrder = "big");
+	
+	private extern _clear();
+	private extern _writeSeek(int Index);
+	private extern _readSeek(int Index);
+	
+	private extern _addString(string Str, string Charset = "utf_8");
+	private extern _addByte(int Byte);
+	private extern _addUByte(int Byte);
+	private extern _addShort(int Short, string ByteOrder = "big");
+	private extern _addUShort(int Short, string ByteOrder = "big");
+	private extern _addInt(int Int, string ByteOrder = "big");
+	private extern _addUInt(int Int, string ByteOrder = "big");
+	private extern _addLong(int Long, string ByteOrder = "big");
+	private extern _addFloat(double Float, string ByteOrder = "big");
+	private extern _addDouble(double Double, string ByteOrder = "big");
+	
+	private extern _setByte(int Index, int Byte, string ByteOrder = "big");
+	private extern _setUByte(int Index, int Byte, string ByteOrder = "big");
+	private extern _setShort(int Index, int Short, string ByteOrder = "big");
+	private extern _setUShort(int Index, int Short, string ByteOrder = "big");
+	private extern _setInt(int Index, int Int, string ByteOrder = "big");
+	private extern _setUInt(int Index, int Int, string ByteOrder = "big");
+	private extern _setLong(int Index, int Long, string ByteOrder = "big");
+	private extern _setFloat(int Index, double Float, string ByteOrder = "big");
+	private extern _setDouble(int Index, double Float, string ByteOrder = "big");
+	
+	private extern _copyFrom(int DestIndex, object Buffer, int SrcIndex = -1, int Length = -1);
+	private extern _copyTo(int SrcIndex, object Buffer, int DestIndex = -1, int Length = -1);
+}
+
+	    
+/*
+ * lang
+ */
+static extern class lang : com.aussom.stdlib.ALang {
+	public extern type(DataType);
+	public extern getClassAussomdoc(string ClassName);
+}
+
+	    
+/*
+ * json
+ */
+static extern class json : com.aussom.stdlib.AJson {
+	public extern parse(string JsonString);
+	public extern unpack(string JsonString);
+}
+
+	    
+/*
+ * secman - Security manager of the currently executing engine.
+ */
+static extern class secman : com.aussom.stdlib.ASecMan {
+	public extern getProp(string PropName);
+	public extern keySet();
+	public extern getMap();
+	public extern setProp(string PropName, Value);
+	public extern setMap(map PropsToSet);
+}
+
+	    
+/*
+ * securitymanager - Security manager object that can be instantiated 
+ * and provided to an engine within aussom.
+ */
+static extern class securitymanager : com.aussom.stdlib.ASecurityManager {
+	public extern getProp(string PropName);
+	public extern keySet();
+	public extern getMap();
+	public extern setProp(string PropName, Value);
+	public extern setMap(map PropsToSet);
+}

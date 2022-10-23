@@ -1,0 +1,1669 @@
+/*
+ * Copyright 2017 Austin Lehman
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.aussom;
+
+import java.math.BigDecimal;
+import java.math.BigInteger;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.Map;
+import java_cup.runtime.*;
+import com.aussom.Engine;
+import com.aussom.ast.*;
+import com.aussom.types.*;
+import com.aussom.stdlib.console;
+
+/* Preliminaries to use the scanner.  */
+scan with {: return lexer.next_token(); :};
+
+parser code {:
+  public boolean syntaxErrors;
+
+  Lexer lexer;
+  Engine eng = null;
+  String fileName;
+
+  public parser(Lexer lex, Engine Eng, String FileName) {
+      super(lex);
+      lexer = lex;
+      this.eng = Eng;
+      this.fileName = FileName;
+  }
+
+  public void report_error(String message, Object info)
+  {
+    syntaxErrors = true;
+    
+    if ( !(info instanceof Symbol) ) return;
+    Symbol symbol = (Symbol) info;
+    
+    if ( symbol.left < 0 || symbol.right < 0 ) return;
+	
+	astNode n = new astNode();
+	n.setParserInfo(this.fileName, symbol.left, symbol.right);
+	aussomException ce = new aussomException(n, "PARSE_ERROR: Unknown symbol found at line " + symbol.left + " column " + symbol.right + ".", "");
+	console.get().err(ce.getMessage());
+	this.eng.setParseError();
+	this.done_parsing();					// Forces parser to quit
+  }
+  
+  public void report_fatal_error(String message, Object info)
+  {
+    this.report_error(message, info);
+    this.eng.setParseError();
+    this.done_parsing();					// Forces parser to quit
+  }
+  
+  public Engine getEngine() {
+  	return this.eng;
+  }
+  
+:}; 
+
+/* Terminals (tokens returned by lexer). */
+terminal				CLASSDEF;
+terminal				ENUM;
+terminal				INCLUDE;
+terminal				PUBLIC;
+terminal				PROTECTED;
+terminal				PRIVATE;
+terminal				STATIC;
+terminal				EXTERN;
+terminal				RETURN;
+terminal				TRY;
+terminal				CATCH;
+terminal				THROW;
+terminal				NEW;
+terminal				NULL;
+terminal				IF;
+terminal				ELSE;
+terminal				SWITCH;
+terminal				CASE;
+terminal				DEFAULT;
+terminal				WHILE;
+terminal				BREAK;
+terminal				FOR;
+terminal				INSTANCEOF;
+
+terminal				SEMI;
+terminal				COLON;
+terminal				COMMA;
+terminal				LPAREN, RPAREN;
+terminal				LBRACKET;
+terminal				RBRACKET;
+terminal				LBRACE;
+terminal				RBRACE;
+
+terminal Boolean		BOOL;
+terminal BigInteger		INT;
+terminal BigDecimal		DOUBLE;
+terminal String			STRING;
+terminal String			IDENT;
+terminal String         AUSSOM_DOC;
+//terminal String			VAR;
+
+terminal				EQ;
+terminal				PLEQ, MIEQ, MUEQ, DIEQ, MODULUSEQ, PLPL, MIMI;
+terminal				PL, MI, MU, DI, MODULUS;
+terminal				UMINUS;
+
+terminal				EQEQ;
+terminal				NOTEQ;
+terminal				LT;
+terminal				GT;
+terminal				LTEQ;
+terminal				GTEQ;
+
+terminal				NOT;
+terminal				AND;
+terminal				OR;
+terminal				COUNT;
+terminal				ETCETERA;
+terminal				CALLBACK;
+terminal				INSERT;
+
+terminal				DOT;
+
+/* Non terminals */
+non terminal Engine									input;
+non terminal Engine									block;
+non terminal astNode								include;
+non terminal astNode                                classBlock;
+non terminal astNode								classDefExpr;
+non terminal Boolean								isStatic;
+non terminal astNode								externClassRef;
+non terminal AccessType								AccessType;
+non terminal astNode								classSection;
+non terminal astNode								classBlocks;
+non terminal astNode								enumBlocks;
+non terminal astNode								enumRec;
+non terminal ArrayList<String>						extendClassList;
+non terminal astNode                                memberDefinitionBlock;
+non terminal astNode								memberDefinition;
+non terminal astNode                                functionDefinitionBlock;
+non terminal astNode								functionDefinition;
+non terminal astFunctDefArgsList					functDefArgList;
+non terminal astNode								functDefArg;
+non terminal cType									functDefPrimType;
+non terminal astStatementList						instructionListBlock;
+non terminal astStatementList						instructionList;
+non terminal astNode								instruction;
+non terminal astNode								returnInstruction;
+non terminal astNode								tryCatchBlock;
+non terminal astNode								includeExp;
+non terminal astNode								expression;
+non terminal astNode								operExp;
+non terminal astNode								indexExp;
+non terminal ArrayList<astNode>						functCallArgList;
+
+non terminal astNode								expNull;
+non terminal astNode								expBool;
+non terminal astNode								expInt;
+non terminal astNode								expDouble;
+non terminal astNode								expString;
+non terminal astNode								expList;
+non terminal ArrayList<astNode>						expListItems;
+non terminal astNode								expListIndividual;
+non terminal astNode								expMap;
+non terminal Map<astNode, astNode>					expMapItems;
+non terminal astNode								expVar;
+non terminal astNode								expFunctDef;
+non terminal astNode								expIfBlock;
+non terminal astNode								expIfBlockList;
+non terminal ArrayList<astNode>						expIfElseBlockList;
+non terminal astNode								expIfElseBlock;
+non terminal astStatementList						expElse;
+non terminal astNode								expSwitch;
+non terminal astNode								expSwitchBlockList;
+non terminal ArrayList<astNode>						expCaseBlockList;
+non terminal astNode								expCaseBlock;
+non terminal astStatementList	 					expDefault;
+non terminal astNode								expWhile;
+non terminal astNode								expBreak;
+non terminal astNode								expFor;
+non terminal astNode								expForExp;
+non terminal astNode								expEtcetera;
+non terminal astNode								expCallback;
+non terminal astNode								expNewList;
+non terminal astList								expNewListItems;
+non terminal astNode								expNewMap;
+non terminal astMap									expNewMapItems;
+non terminal astNode								expThrow;
+
+/* Precedences */
+/*
+ * Precedence operators need to be left here
+ * at the end! Otherwise Terminal "ILLEGAL" has not been declared
+ * error will happen.
+ */
+
+precedence right THROW;
+precedence right EQ;
+precedence right MIEQ, PLEQ, DIEQ, MODULUSEQ, MUEQ, INSERT;
+precedence right AND, OR;
+precedence right EQEQ, NOTEQ, LT, GT, LTEQ, GTEQ;
+precedence right MI, PL;
+precedence right DI, MU, MODULUS;
+precedence left NOT;
+precedence right COUNT;
+precedence right INSTANCEOF;
+precedence right DOT;
+precedence right LBRACE;
+precedence left ELSE;
+precedence left UMINUS;
+
+
+
+input ::= 
+	block:r
+	{:
+		RESULT = r;
+	:}
+;
+
+block ::=
+	classBlock:c
+	{:
+		this.parser.eng.addClass(c);
+		RESULT = this.parser.eng;
+	:}
+|	block:r classBlock:c
+	{:
+		r.addClass(c);
+		RESULT = r;
+	:}
+|	INCLUDE include:i SEMI
+	{:
+		this.parser.eng.addInclude(((astInclude)i).getPath());
+		RESULT = this.parser.eng;
+	:}
+|	block:r INCLUDE include:i SEMI
+	{:
+		r.addInclude(((astInclude)i).getPath());
+		RESULT = r;
+	:}
+|	error
+	{:
+		
+	:}
+;
+
+include ::=
+	expVar:name
+	{:
+		astInclude i = new astInclude(((astVar)name).getName());
+		i.setParserInfo(this.parser.fileName, nameleft, nameright);
+		RESULT = i;
+	:}
+|	include:i DOT expVar:name
+	{:
+		((astInclude)i).addName(((astVar)name).getName());
+		RESULT = i;
+	:}
+;
+
+classBlock ::=
+    classDefExpr:exp
+    {:
+        RESULT = exp;
+    :}
+|   AUSSOM_DOC:doc classDefExpr:exp
+    {:
+        // Set doc node.
+        astAussomDoc ad = new astAussomDoc(doc);
+        ad.setParserInfo(this.parser.fileName, docleft, docright);
+        exp.setDocNode(ad);
+        RESULT = exp;
+    :}
+;
+
+classDefExpr ::=
+	isStatic:is CLASSDEF IDENT:className classSection:ac
+	{:
+		ac.setName(className);
+		ac.setParserInfo(this.parser.fileName, classNameleft, classNameright);
+		((astClass)ac).setStatic((boolean)is);
+		RESULT = ac;
+	:}
+|	isStatic:is CLASSDEF IDENT:className COLON extendClassList:cl classSection:ac
+	{:
+		ac.setName(className);
+		ac.setParserInfo(this.parser.fileName, classNameleft, classNameright);
+		((astClass)ac).setStatic((boolean)is);
+		((astClass)ac).setExtendedClasses(cl);
+		RESULT = ac;
+	:}
+|	isStatic:is EXTERN CLASSDEF IDENT:className COLON externClassRef:i classSection:ac
+	{:
+		ac.setName(className);
+		ac.setParserInfo(this.parser.fileName, classNameleft, classNameright);
+		((astClass)ac).setStatic((boolean)is);
+		((astClass)ac).setExtern(true);
+		((astClass)ac).setExternClassName(((astInclude)i).getExternClass());
+		RESULT = ac;
+	:}
+|	isStatic:is EXTERN CLASSDEF IDENT:className COLON externClassRef:i COMMA extendClassList:cl classSection:ac
+	{:
+		ac.setName(className);
+		ac.setParserInfo(this.parser.fileName, classNameleft, classNameright);
+		((astClass)ac).setStatic((boolean)is);
+		((astClass)ac).setExtern(true);
+		((astClass)ac).setExternClassName(((astInclude)i).getExternClass());
+		((astClass)ac).setExtendedClasses(cl);
+		RESULT = ac;
+	:}
+|	ENUM IDENT:enumName LBRACKET enumBlocks:eb RBRACKET
+	{:
+		eb.setName(enumName);
+		eb.setParserInfo(this.parser.fileName, enumNameleft, enumNameright);
+		((astClass)eb).setStatic(true);
+		RESULT = eb;
+	:}
+;
+
+extendClassList ::=
+	IDENT:className
+	{:
+		ArrayList<String> list = new ArrayList<String>();
+		list.add(className);
+		RESULT = list;
+	:}
+|	extendClassList:ecl COMMA IDENT:className
+	{:
+		ecl.add(className);
+		RESULT = ecl;
+	:}
+;
+
+isStatic ::=
+	/* Empty */
+	{:
+		RESULT = new Boolean(false);
+	:}
+|	STATIC
+	{:
+		RESULT = new Boolean(true);
+	:}
+;
+
+externClassRef ::=
+	expVar:name
+	{:
+		astInclude i = new astInclude(((astVar)name).getName());
+		RESULT = i;
+	:}
+|	externClassRef:i DOT expVar:name
+	{:
+		((astInclude)i).addName(((astVar)name).getName());
+		RESULT = i;
+	:}
+;
+
+classSection ::=
+	LBRACKET RBRACKET
+	{:
+		astClass ac = new astClass();
+		RESULT = ac;
+	:}
+|	LBRACKET classBlocks:ac RBRACKET
+	{:
+		RESULT = ac;
+	:}
+;
+
+classBlocks ::=
+	memberDefinitionBlock:v
+	{:
+		astClass ac = new astClass();
+		ac.addMember(v.getName(), v);
+		RESULT = (astNode)ac;
+	:}
+|	classBlocks:ac memberDefinitionBlock:v
+	{:
+		((astClass)ac).addMember(v.getName(), v);
+		RESULT = ac;
+	:}
+|	functionDefinitionBlock:f
+	{:
+		astClass ac = new astClass();
+		ac.addFunction(f.getName(), f);
+		RESULT = (astNode)ac;
+	:}
+|	classBlocks:ac functionDefinitionBlock:f
+	{:
+		((astClass)ac).addFunction(f.getName(), f);
+		RESULT = ac;
+	:}
+;
+
+memberDefinitionBlock ::=
+    memberDefinition:md
+    {:
+        RESULT = md;
+    :}
+|   AUSSOM_DOC:doc memberDefinition:md
+    {:
+        // Set doc node.
+        astAussomDoc ad = new astAussomDoc(doc);
+        ad.setParserInfo(this.parser.fileName, docleft, docright);
+        md.setDocNode(ad);
+        RESULT = md;
+    :}
+;
+
+memberDefinition ::=
+	AccessType:am expVar:v SEMI
+	{:
+		((astVar)v).setAccessType(am);
+		RESULT = v;
+	:}
+|	AccessType:am expVar:v EQ expNull:n SEMI
+	{:
+		n.setName(v.getName());
+		n.setAccessType(am);
+		RESULT = n;
+	:}
+|	AccessType:am expVar:v EQ expBool:b SEMI
+	{:
+		b.setName(v.getName());
+		b.setAccessType(am);
+		RESULT = b;
+	:}
+|	AccessType:am expVar:v EQ expInt:i SEMI
+	{:
+		i.setName(v.getName());
+		i.setAccessType(am);
+		RESULT = i;
+	:}
+|	AccessType:am expVar:v EQ expDouble:d SEMI
+	{:
+		d.setName(v.getName());
+		d.setAccessType(am);
+		RESULT = d;
+	:}
+|	AccessType:am expVar:v EQ expString:s SEMI
+	{:
+		s.setName(v.getName());
+		s.setAccessType(am);
+		RESULT = s;
+	:}
+|	AccessType:am expVar:v EQ expList:l SEMI
+	{:
+		l.setName(v.getName());
+		l.setAccessType(am);
+		RESULT = l;
+	:}
+|	AccessType:am expVar:v EQ expMap:d SEMI
+	{:
+		d.setName(v.getName());
+		d.setAccessType(am);
+		RESULT = d;
+	:}
+;
+
+enumBlocks ::=
+	enumRec:er
+	{:
+		astClass ac = new astClass();
+		ac.setParserInfo(this.parser.fileName, erleft, erright);
+		ac.addMember(er.getName(), er);
+		RESULT = (astNode)ac;
+	:}
+|	enumBlocks:eb enumRec:er
+	{:
+		((astClass)eb).addMember(er.getName(), er);
+		RESULT = eb;
+	:}
+;
+
+enumRec ::=
+	expVar:v SEMI
+	{:
+		astString tmp = new astString(v.getName());
+		tmp.setName(v.getName());
+		tmp.setParserInfo(this.parser.fileName, vleft, vright);
+		tmp.setAccessType(AccessType.aPublic);
+		RESULT = tmp;
+	:}
+|	expVar:v EQ expString:s SEMI
+	{:
+		astString tmp = new astString(((astString)s).getValueString());
+		tmp.setName(v.getName());
+		tmp.setParserInfo(this.parser.fileName, vleft, vright);
+		tmp.setAccessType(AccessType.aPublic);
+		RESULT = tmp;
+	:}
+;
+
+functionDefinitionBlock ::=
+    functionDefinition:fd
+    {:
+        RESULT = fd;
+    :}
+|   AUSSOM_DOC:doc functionDefinition:fd
+    {:
+        // Set doc node.
+        astAussomDoc ad = new astAussomDoc(doc);
+        ad.setParserInfo(this.parser.fileName, docleft, docright);
+        fd.setDocNode(ad);
+        RESULT = fd;
+    :}
+;
+
+functionDefinition ::=
+	AccessType:am expFunctDef:f LPAREN functDefArgList:al RPAREN LBRACKET instructionList:il RBRACKET
+	{:
+		f.setParserInfo(this.parser.fileName, fleft, fright);
+		((astFunctDef)f).setArgList(al);
+		((astFunctDef)f).setInstructionList(il);
+		f.setAccessType(am);
+		RESULT = f;
+	:}
+|	AccessType:am expFunctDef:f LPAREN functDefArgList:al RPAREN LBRACKET RBRACKET
+	{:
+		f.setParserInfo(this.parser.fileName, fleft, fright);
+		((astFunctDef)f).setArgList(al);
+		f.setAccessType(am);
+		RESULT = f;
+	:}
+|	AccessType:am EXTERN expFunctDef:f LPAREN functDefArgList:al RPAREN SEMI
+	{:
+		f.setParserInfo(this.parser.fileName, fleft, fright);
+		((astFunctDef)f).setArgList(al);
+		((astFunctDef)f).setExtern(true);
+		f.setAccessType(am);
+		RESULT = f;
+	:}
+;
+
+functDefArgList ::=
+	/* Empty */
+	{:
+		astFunctDefArgsList al = new astFunctDefArgsList();
+		RESULT = al;
+	:}
+|	functDefArg:fda
+	{:
+		astFunctDefArgsList al = new astFunctDefArgsList();
+		al.addNode(fda);
+		RESULT = al;
+	:}
+|	functDefArgList:al COMMA functDefArg:fda
+	{:
+		al.addNode(fda);
+		RESULT = al;
+	:}
+|	functDefPrimType:p functDefArg:fda
+	{:
+		fda.setPrimType(p);
+		astFunctDefArgsList al = new astFunctDefArgsList();
+		al.addNode(fda);
+		RESULT = al;
+	:}
+|	functDefArgList:al COMMA functDefPrimType:p functDefArg:fda
+	{:
+		fda.setPrimType(p);
+		al.addNode(fda);
+		RESULT = al;
+	:}
+;
+
+functDefArg ::=
+	expVar:av
+	{:
+		RESULT = av;
+	:}
+|	expVar:v EQ expNull:n
+	{:
+		n.setName(v.getName());
+		RESULT = n;
+	:}
+|	expVar:v EQ expBool:b
+	{:
+		b.setName(v.getName());
+		RESULT = b;
+	:}
+|	expVar:v EQ expInt:i
+	{:
+		i.setName(v.getName());
+		RESULT = i;
+	:}
+|	expVar:v EQ expDouble:d
+	{:
+		d.setName(v.getName());
+		RESULT = d;
+	:}
+|	expVar:v EQ expString:s
+	{:
+		s.setName(v.getName());
+		RESULT = s;
+	:}
+|	expVar:v EQ expList:l
+	{:
+		l.setName(v.getName());
+		RESULT = l;
+	:}
+|	expVar:v EQ expMap:d
+	{:
+		d.setName(v.getName());
+		RESULT = d;
+	:}
+|	expEtcetera:etc
+	{:
+		RESULT = (astNode)etc;
+	:}
+;
+
+functDefPrimType ::=
+	IDENT:s
+	{:
+		if(s.equals("bool")) RESULT = cType.cBool;
+		else if(s.equals("int")) RESULT = cType.cInt;
+		else if(s.equals("double")) RESULT = cType.cDouble;
+		else if(s.equals("string")) RESULT = cType.cString;
+		else if(s.equals("list")) RESULT = cType.cList;
+		else if(s.equals("map")) RESULT = cType.cMap;
+		else if(s.equals("object")) RESULT = cType.cObject;
+		else if(s.equals("callback")) RESULT = cType.cCallback;
+		else
+		{
+			astNode n = new astNode();
+			n.setParserInfo(this.parser.fileName, sleft, sright);
+			throw new aussomException(n, "PARSE_ERROR: Expecting primative identifier but found '" + s + "' instead.", "");
+		}
+	:}
+;
+
+instructionList ::=
+	instruction:i
+	{:
+		astStatementList il = new astStatementList();
+		il.addNode(i);
+		RESULT = il;
+	:}
+|	instructionList:il instruction:i
+	{:
+		il.addNode(i);
+		RESULT = il;
+	:}
+;
+
+instruction ::=
+	expression:e SEMI
+	{:
+		RESULT = (astNode)e;
+	:}
+|	returnInstruction:r
+	{:
+		RESULT = (astNode)r;
+	:}
+|	expIfBlock:ib
+	{:
+		RESULT = ib;
+	:}
+|	expSwitch:s
+	{:
+		RESULT = s;
+	:}
+|	expWhile:w
+	{:
+		RESULT = w;
+	:}
+|	expFor:f
+	{:
+		RESULT = f;
+	:}
+|	tryCatchBlock:tcb
+	{:
+		RESULT = (astNode)tcb;
+	:}
+|	includeExp:ie
+	{:
+		RESULT = ie;
+	:}
+;
+
+includeExp ::=
+	INCLUDE include:i SEMI
+	{:
+		astExpression e = new astExpression(i);
+		e.setParserInfo(this.parser.fileName, ileft, iright);
+		e.seteType(expType.INCLUDE);
+		RESULT = e;
+	:}
+;
+
+expression ::=
+	operExp:oe
+	{:
+		RESULT = oe;
+	:}
+|	NEW:n expVar:v LPAREN functCallArgList:al RPAREN
+	{:
+		astNewInst ni = new astNewInst(((astVar)v).getName());
+		ni.setParserInfo(this.parser.fileName, nleft, nright);
+		astFunctDefArgsList nl = new astFunctDefArgsList();
+		nl.setArgs(al);
+		ni.setArgs(nl);
+		RESULT = ni;
+	:}
+|	expNewList:nl
+	{:
+		RESULT = nl;
+	:}
+|	expNewMap:nm
+	{:
+		RESULT = nm;
+	:}
+|	expCallback:cb
+	{:
+		RESULT = cb;
+	:}
+|	expression:el INSERT expression:er
+	{:
+		astExpression e = new astExpression(el);
+		e.setParserInfo(this.parser.fileName, erleft, erright);
+		e.setRight(er);
+		e.seteType(expType.INSERT);
+		RESULT = e;
+	:}
+|	COUNT expression:el
+	{:
+		astExpression e = new astExpression(el);
+		e.setParserInfo(this.parser.fileName, elleft, elright);
+		e.seteType(expType.COUNT);
+		RESULT = e;
+	:}
+|	expVar:v LPAREN functCallArgList:al RPAREN
+	{:
+		astFunctCall afc = new astFunctCall(((astVar)v).getName());
+		afc.setParserInfo(this.parser.fileName, vleft, vright);
+		astFunctDefArgsList nl = new astFunctDefArgsList();
+		nl.setArgs(al);
+		afc.setArgs(nl);
+		RESULT = afc;
+	:}
+|	expression:el DOT expression:er
+	{:
+		el.setChild(er);
+		RESULT = el;
+	:}
+|	expression:el INSTANCEOF expression:er
+	{:
+		astExpression e = new astExpression(el);
+		e.setParserInfo(this.parser.fileName, erleft, erright);
+		e.setRight(er);
+		e.seteType(expType.INSTANCEOF);
+		RESULT = e;
+	:}
+|	expression:el indexExp:ie
+	{:
+		el.setChild(ie);
+		RESULT = el;
+	:}
+|	expVar:v 
+	{:
+		astObj ao = new astObj();
+		ao.setParserInfo(this.parser.fileName, vleft, vright);
+		ao.setName(v.getName());
+		RESULT = ao;
+	:}
+|	expNull:n
+	{:
+		RESULT = n;
+	:}
+|	expBool:b
+	{:
+		RESULT = b;
+	:}
+|	expInt:i
+	{:
+		RESULT = i;
+	:}
+|	expDouble:d
+	{:
+		RESULT = d;
+	:}
+|	expString:s
+	{:
+		RESULT = s;
+	:}
+|	expBreak:b
+	{:
+		RESULT = b;
+	:}
+|	expThrow:t
+	{:
+		RESULT = t;
+	:}
+|	LPAREN expression:e RPAREN
+	{:
+		RESULT = e;
+	:}
+;
+
+indexExp ::= 
+	LBRACE expression:er RBRACE
+	{:
+		astObj aobj = new astObj();
+		aobj.setParserInfo(this.parser.fileName, erleft, erright);
+		aobj.setIndex(er);
+		RESULT = aobj;
+	:}
+|	indexExp:ie LBRACE expression:er RBRACE 
+	{:
+		astObj aobj = new astObj();
+		aobj.setParserInfo(this.parser.fileName, erleft, erright);
+		aobj.setIndex(er);
+		ie.setChild(aobj);
+		RESULT = ie;
+	:}
+|	indexExp:ie DOT expression:er
+	{:
+		ie.setChild(er);
+		RESULT = ie;
+	:}
+;
+
+operExp ::=
+	expression:el PL expression:er
+	{:
+		astExpression e = new astExpression(el);
+		e.setParserInfo(this.parser.fileName, erleft, erright);
+		e.setRight(er);
+		e.seteType(expType.ADD);
+		RESULT = e;
+	:}
+|	expression:el MI expression:er
+	{:
+		astExpression e = new astExpression(el);
+		e.setParserInfo(this.parser.fileName, erleft, erright);
+		e.setRight(er);
+		e.seteType(expType.SUBTRACT);
+		RESULT = e;
+	:}
+|	expression:el MU expression:er
+	{:
+		astExpression e = new astExpression(el);
+		e.setParserInfo(this.parser.fileName, erleft, erright);
+		e.setRight(er);
+		e.seteType(expType.MULTIPLY);
+		RESULT = e;
+	:}
+|	expression:el DI expression:er
+	{:
+		astExpression e = new astExpression(el);
+		e.setParserInfo(this.parser.fileName, erleft, erright);
+		e.setRight(er);
+		e.seteType(expType.DIVIDE);
+		RESULT = e;
+	:}
+|	expression:el MODULUS expression:er
+	{:
+		astExpression e = new astExpression(el);
+		e.setParserInfo(this.parser.fileName, erleft, erright);
+		e.setRight(er);
+		e.seteType(expType.MODULUS);
+		RESULT = e;
+	:}	
+|	expression:el EQ expression:er
+	{:
+		astExpression e = new astExpression(el);
+		e.setParserInfo(this.parser.fileName, erleft, erright);
+		e.setRight(er);
+		e.seteType(expType.ASSIGNMENT);
+		RESULT = e;
+	:}
+|	expression:el PLEQ expression:er
+	{:
+		astExpression ea = new astExpression(el);
+		ea.setParserInfo(this.parser.fileName, erleft, erright);
+		ea.setRight(er);
+		ea.seteType(expType.ADD);
+		
+		astExpression e = new astExpression(el);
+		e.setParserInfo(this.parser.fileName, erleft, erright);
+		e.setRight(ea);
+		e.seteType(expType.ASSIGNMENT);
+		RESULT = e;
+	:}
+|	expression:el MIEQ expression:er
+	{:
+		astExpression ea = new astExpression(el);
+		ea.setParserInfo(this.parser.fileName, erleft, erright);
+		ea.setRight(er);
+		ea.seteType(expType.SUBTRACT);
+		
+		astExpression e = new astExpression(el);
+		e.setParserInfo(this.parser.fileName, erleft, erright);
+		e.setRight(ea);
+		e.seteType(expType.ASSIGNMENT);
+		RESULT = e;
+	:}
+|	expression:el MUEQ expression:er
+	{:
+		astExpression ea = new astExpression(el);
+		ea.setParserInfo(this.parser.fileName, erleft, erright);
+		ea.setRight(er);
+		ea.seteType(expType.MULTIPLY);
+		
+		astExpression e = new astExpression(el);
+		e.setParserInfo(this.parser.fileName, erleft, erright);
+		e.setRight(ea);
+		e.seteType(expType.ASSIGNMENT);
+		RESULT = e;
+	:}
+|	expression:el DIEQ expression:er
+	{:
+		astExpression ea = new astExpression(el);
+		ea.setParserInfo(this.parser.fileName, erleft, erright);
+		ea.setRight(er);
+		ea.seteType(expType.DIVIDE);
+		
+		astExpression e = new astExpression(el);
+		e.setParserInfo(this.parser.fileName, erleft, erright);
+		e.setRight(ea);
+		e.seteType(expType.ASSIGNMENT);
+		RESULT = e;
+	:}
+|	expression:el MODULUSEQ expression:er
+	{:
+		astExpression ea = new astExpression(el);
+		ea.setParserInfo(this.parser.fileName, erleft, erright);
+		ea.setRight(er);
+		ea.seteType(expType.MODULUS);
+		
+		astExpression e = new astExpression(el);
+		e.setParserInfo(this.parser.fileName, erleft, erright);
+		e.setRight(ea);
+		e.seteType(expType.ASSIGNMENT);
+		RESULT = e;
+	:}
+|	expression:el PLPL
+	{:
+		astInt ai = new astInt(1);
+		ai.setParserInfo(this.parser.fileName, elleft, elright);
+		
+		astExpression ea = new astExpression(el);
+		ea.setParserInfo(this.parser.fileName, elleft, elright);
+		ea.setRight(ai);
+		ea.seteType(expType.ADD);
+		
+		astExpression e = new astExpression(el);
+		e.setParserInfo(this.parser.fileName, elleft, elright);
+		e.setRight(ea);
+		e.seteType(expType.ASSIGNMENT);
+		RESULT = e;
+	:}
+|	expression:el MIMI
+	{:
+		astInt ai = new astInt(1);
+		ai.setParserInfo(this.parser.fileName, elleft, elright);
+		
+		astExpression ea = new astExpression(el);
+		ea.setParserInfo(this.parser.fileName, elleft, elright);
+		ea.setRight(ai);
+		ea.seteType(expType.SUBTRACT);
+		
+		astExpression e = new astExpression(el);
+		e.setParserInfo(this.parser.fileName, elleft, elright);
+		e.setRight(ea);
+		e.seteType(expType.ASSIGNMENT);
+		RESULT = e;
+	:}
+|	expression:el EQEQ expression:er
+	{:
+		astExpression e = new astExpression(el);
+		e.setParserInfo(this.parser.fileName, erleft, erright);
+		e.setRight(er);
+		e.seteType(expType.EQEQ);
+		RESULT = e;
+	:}
+|	expression:el NOTEQ expression:er
+	{:
+		astExpression e = new astExpression(el);
+		e.setParserInfo(this.parser.fileName, erleft, erright);
+		e.setRight(er);
+		e.seteType(expType.NOTEQ);
+		RESULT = e;
+	:}
+|	expression:el LT expression:er
+	{:
+		astExpression e = new astExpression(el);
+		e.setParserInfo(this.parser.fileName, erleft, erright);
+		e.setRight(er);
+		e.seteType(expType.LT);
+		RESULT = e;
+	:}
+|	expression:el GT expression:er
+	{:
+		astExpression e = new astExpression(el);
+		e.setParserInfo(this.parser.fileName, erleft, erright);
+		e.setRight(er);
+		e.seteType(expType.GT);
+		RESULT = e;
+	:}
+|	expression:el LTEQ expression:er
+	{:
+		astExpression e = new astExpression(el);
+		e.setParserInfo(this.parser.fileName, erleft, erright);
+		e.setRight(er);
+		e.seteType(expType.LTEQ);
+		RESULT = e;
+	:}
+|	expression:el GTEQ expression:er
+	{:
+		astExpression e = new astExpression(el);
+		e.setParserInfo(this.parser.fileName, erleft, erright);
+		e.setRight(er);
+		e.seteType(expType.GTEQ);
+		RESULT = e;
+	:}
+|	NOT expression:er
+	{:
+		astExpression e = new astExpression(er);
+		e.setParserInfo(this.parser.fileName, erleft, erright);
+		e.seteType(expType.NOT);
+		RESULT = e;
+	:}
+|	expression:el AND expression:er
+	{:
+		astExpression e = new astExpression(el);
+		e.setParserInfo(this.parser.fileName, erleft, erright);
+		e.setRight(er);
+		e.seteType(expType.AND);
+		RESULT = e;
+	:}
+|	expression:el OR expression:er
+	{:
+		astExpression e = new astExpression(el);
+		e.setParserInfo(this.parser.fileName, erleft, erright);
+		e.setRight(er);
+		e.seteType(expType.OR);
+		RESULT = e;
+	:}
+;
+
+returnInstruction ::=
+	RETURN:r SEMI
+	{:
+		astReturn ar = new astReturn();
+		ar.setParserInfo(this.parser.fileName, rleft, rright);
+		RESULT = ar;
+	:}
+|	RETURN:r expression:ex SEMI
+	{:
+		astReturn ar = new astReturn();
+		ar.setValue(ex);
+		ar.setParserInfo(this.parser.fileName, rleft, rright);
+		RESULT = ar;
+	:} 
+;
+
+tryCatchBlock ::=
+	TRY:t instructionListBlock:til CATCH LPAREN expVar:v RPAREN instructionListBlock:cil
+	{:
+		astTryCatch atc = new astTryCatch();
+		atc.setParserInfo(this.parser.fileName, tleft, tright);
+		atc.setName(v.getName());
+		atc.setTryInstList(til);
+		atc.setCatchInstList(cil);
+		RESULT = atc;
+	:} 
+;
+
+instructionListBlock ::=
+	LBRACKET RBRACKET
+	{:
+		astStatementList il = new astStatementList();
+		RESULT = il;
+	:}
+|	LBRACKET instructionList:il RBRACKET
+	{:
+		RESULT = il;
+	:}
+;
+
+expIfBlock ::=
+	expIfBlockList:eibl
+	{:
+		RESULT = eibl;
+	:}
+|	expIfBlockList:eibl expIfElseBlockList:eiebl
+	{:
+		astIfElse aie = (astIfElse)eibl;
+		aie.setIfElseConditions((ArrayList<astNode>)eiebl);
+		RESULT = aie;
+	:}
+|	expIfBlockList:eibl  expElse:ee
+	{:
+		astIfElse aie = (astIfElse)eibl;
+		aie.setElseInstructionList(ee);
+		RESULT = aie;
+	:}
+|	expIfBlockList:eibl expIfElseBlockList:eiebl expElse:ee
+	{:
+		astIfElse aie = (astIfElse)eibl;
+		aie.setIfElseConditions((ArrayList<astNode>)eiebl);
+		aie.setElseInstructionList(ee);
+		RESULT = aie;
+	:}
+;
+
+expIfBlockList ::=
+	IF LPAREN expression:e RPAREN LBRACKET RBRACKET
+	{:
+		astIfElse aie = new astIfElse();
+		aie.setParserInfo(this.parser.fileName, eleft, eright);
+		astConditionBlock acb = new astConditionBlock();
+		acb.setExpression(e);
+		aie.setIfCondition(acb);
+		RESULT = aie;
+	:}
+|	IF LPAREN expression:e RPAREN LBRACKET instructionList:iil RBRACKET
+	{:
+		astIfElse aie = new astIfElse();
+		aie.setParserInfo(this.parser.fileName, eleft, eright);
+		astConditionBlock acb = new astConditionBlock();
+		acb.setExpression(e);
+		acb.setInstructionList(iil);
+		aie.setIfCondition(acb);
+		RESULT = aie;
+	:}
+;
+
+expIfElseBlockList ::=
+	expIfElseBlock:el
+	{:
+		ArrayList<astNode> iecl = new ArrayList<astNode>();
+		iecl.add(el);
+		RESULT = iecl;
+	:}
+|	expIfElseBlockList:eieb expIfElseBlock:er
+	{:
+		eieb.add(er);
+		RESULT = eieb;
+	:}
+;
+
+expIfElseBlock ::=
+	ELSE IF LPAREN expression:e RPAREN LBRACKET RBRACKET
+	{:
+		astConditionBlock acb = new astConditionBlock();
+		acb.setParserInfo(this.parser.fileName, eleft, eright);
+		acb.setExpression(e);
+		RESULT = acb;
+	:}
+|	ELSE IF LPAREN expression:e RPAREN LBRACKET instructionList:iil RBRACKET
+	{:
+		astConditionBlock acb = new astConditionBlock();
+		acb.setParserInfo(this.parser.fileName, eleft, eright);
+		acb.setExpression(e);
+		acb.setInstructionList(iil);
+		RESULT = acb;
+	:}
+;
+
+expElse ::=
+	ELSE LBRACKET RBRACKET
+	{:
+		astStatementList list = new astStatementList();
+		RESULT = list;
+	:}
+|	ELSE LBRACKET instructionList:iil RBRACKET
+	{:
+		RESULT = iil;
+	:}
+;
+
+expSwitch ::=
+	SWITCH LPAREN expression:e RPAREN LBRACKET expSwitchBlockList:sbl RBRACKET
+	{:
+		astSwitch as = (astSwitch)sbl;
+		as.setParserInfo(this.parser.fileName, eleft, eright);
+		as.setExpression(e);
+		RESULT = as;
+	:}
+|	SWITCH LPAREN expression:e RPAREN LBRACKET RBRACKET
+	{:
+		astSwitch as = new astSwitch();
+		as.setParserInfo(this.parser.fileName, eleft, eright);
+		as.setExpression(e);
+		RESULT = as;
+	:}
+;
+
+expSwitchBlockList ::=
+	expCaseBlockList:ecbl
+	{:
+		astSwitch as = new astSwitch();
+		as.setCaseConditions(ecbl);
+		RESULT = as;
+	:}
+|	expCaseBlockList:ecbl expDefault:ed
+	{:
+		astSwitch as = new astSwitch();
+		as.setCaseConditions(ecbl);
+		as.setDefaultList(ed);
+		RESULT = as;
+	:}
+;
+
+expCaseBlockList ::=
+	expCaseBlock:ecb
+	{:
+		ArrayList<astNode> list = new ArrayList<astNode>();
+		list.add(ecb);
+		RESULT = list;
+	:}
+|	expCaseBlockList:ecbl expCaseBlock:ecb
+	{:
+		ecbl.add(ecb);
+		RESULT = ecbl;
+	:}
+;
+
+expCaseBlock ::=
+	CASE expression:e COLON LBRACKET instructionList:il RBRACKET
+	{:
+		astConditionBlock acb = new astConditionBlock();
+		acb.setParserInfo(this.parser.fileName, eleft, eright);
+		acb.setExpression(e);
+		acb.setInstructionList(il);
+		RESULT = acb;
+	:}
+|	CASE expression:e COLON LBRACKET RBRACKET
+	{:
+		astConditionBlock acb = new astConditionBlock();
+		acb.setParserInfo(this.parser.fileName, eleft, eright);
+		acb.setExpression(e);
+		RESULT = acb;
+	:}
+;
+
+expDefault ::=
+	DEFAULT COLON LBRACKET instructionList:il RBRACKET
+	{:
+		RESULT = il;
+	:}
+|	DEFAULT COLON LBRACKET RBRACKET
+	{:
+		astStatementList list = new astStatementList();
+		RESULT = list;
+	:}
+;
+
+expWhile ::=
+	WHILE LPAREN expression:e RPAREN LBRACKET instructionList:il RBRACKET
+	{:
+		astWhile aw = new astWhile();
+		aw.setParserInfo(this.parser.fileName, eleft, eright);
+		aw.setExpr(e);
+		aw.setInstructions(il);
+		RESULT = aw;
+	:}
+|	WHILE LPAREN expression:e RPAREN LBRACKET RBRACKET
+	{:
+		astWhile aw = new astWhile();
+		aw.setParserInfo(this.parser.fileName, eleft, eright);
+		aw.setExpr(e);
+		RESULT = aw;
+	:}
+;
+
+expFor ::=
+	FOR:f LPAREN expForExp:einit SEMI expForExp:econd SEMI expForExp:eincr  RPAREN LBRACKET instructionList:il RBRACKET
+	{:
+		astFor af = new astFor();
+		af.setParserInfo(this.parser.fileName, fleft, fright);
+		af.setExprInit(einit);
+		af.setExprCond(econd);
+		af.setExprInc(eincr);
+		af.setInstructions(il);
+		RESULT = af;
+	:}
+|	FOR:f LPAREN expForExp:einit SEMI expForExp:econd SEMI expForExp:eincr RPAREN LBRACKET RBRACKET
+	{:
+		astFor af = new astFor();
+		af.setParserInfo(this.parser.fileName, fleft, fright);
+		af.setExprInit(einit);
+		af.setExprCond(econd);
+		af.setExprInc(eincr);
+		RESULT = af;
+	:}
+|	FOR:f LPAREN expVar:ev COLON expression:er RPAREN LBRACKET instructionList:il RBRACKET
+	{:
+		astFor af = new astFor();
+		af.setParserInfo(this.parser.fileName, fleft, fright);
+		af.setIsForEach(true);
+		af.setEachVar(ev);
+		af.setEachExpr(er);
+		af.setInstructions(il);
+		RESULT = af;
+	:}
+|	FOR:f LPAREN expVar:ev COLON expression:er RPAREN LBRACKET RBRACKET
+	{:
+		astFor af = new astFor();
+		af.setParserInfo(this.parser.fileName, fleft, fright);
+		af.setIsForEach(true);
+		af.setEachVar(ev);
+		af.setEachExpr(er);
+		RESULT = af;
+	:}
+;
+
+expForExp ::=
+	/* blank */
+	{:
+		RESULT = new astNull();
+	:}
+|	expression:e
+	{:
+		RESULT = e;
+	:}
+;
+
+functCallArgList ::=
+	/* Empty */
+	{:
+		ArrayList<astNode> al = new ArrayList<astNode>();
+		RESULT = al;
+	:}
+|	expression:e
+	{:
+		ArrayList<astNode> al = new ArrayList<astNode>();
+		al.add(e);
+		RESULT = al;
+	:}
+|	functCallArgList:al COMMA expression:e
+	{:
+		al.add(e);
+		RESULT = al;
+	:}
+;
+
+AccessType ::=
+	/* Empty */
+	{:
+		RESULT = AccessType.aPrivate;
+	:}
+|	PUBLIC
+	{:
+		RESULT = AccessType.aPublic;
+	:}
+|	PROTECTED
+	{:
+		RESULT = AccessType.aProtected;
+	:}
+|	PRIVATE
+	{:
+		RESULT = AccessType.aPrivate;
+	:}
+;
+
+expNull ::=
+	NULL:n
+	{:
+		astNull an = new astNull();
+		an.setParserInfo(this.parser.fileName, nleft, nright);
+		RESULT = an;
+	:}
+;
+
+expBool ::=
+	BOOL:b
+	{:
+		astBool ab = new astBool(b);
+		ab.setParserInfo(this.parser.fileName, bleft, bright);
+		RESULT = ab;
+	:}
+;
+
+expInt ::=
+	INT:i
+	{:
+		BigInteger val = i;
+		if(val.compareTo(new BigInteger(String.valueOf(Long.MAX_VALUE))) == 1)
+		{
+			astNode n = new astNode();
+			n.setParserInfo(this.parser.fileName, ileft, iright);
+			throw new aussomException(n, "PARSE_ERROR: Integer out of bounds. Integer max size is " + String.valueOf(Long.MAX_VALUE) + ". <" + val.toString() + ">", "");
+		}
+		
+		astInt ai = new astInt(i.longValue());
+		ai.setParserInfo(this.parser.fileName, ileft, iright);
+		RESULT = ai;
+	:}
+|	MI INT:i
+	{:
+		BigInteger val = i.multiply(new BigInteger("-1"));
+		if(val.compareTo(new BigInteger(String.valueOf(Long.MIN_VALUE))) == -1)
+		{
+			astNode n = new astNode();
+			n.setParserInfo(this.parser.fileName, ileft, iright);
+			throw new aussomException(n, "PARSE_ERROR: Integer out of bounds. Integer min size is " + String.valueOf(Long.MIN_VALUE) + ". <" + val.toString() + ">", "");
+		}
+		
+		astInt ai = new astInt(val.longValue());
+		ai.setParserInfo(this.parser.fileName, ileft, iright);
+		RESULT = ai;
+	:} %prec UMINUS
+;
+
+expDouble ::=
+	DOUBLE:d
+	{:
+		BigDecimal val = d;
+		if(val.compareTo(new BigDecimal(Double.MAX_VALUE)) == 1)
+		{
+			astNode n = new astNode();
+			n.setParserInfo(this.parser.fileName, dleft, dright);
+			throw new aussomException(n, "PARSE_ERROR: Double out of bounds. Double max size is " + String.valueOf(Double.MAX_VALUE) + ". <" + val.toString() + ">", "");
+		}
+		
+		astDouble ad = new astDouble(d.doubleValue());
+		ad.setParserInfo(this.parser.fileName, dleft, dright);
+		RESULT = ad;
+	:}
+|	MI DOUBLE:d
+	{:
+		BigDecimal val = d.multiply(new BigDecimal("-1.0"));
+		if(val.compareTo(new BigDecimal(-Double.MAX_VALUE)) == -1)
+		{
+			astNode n = new astNode();
+			n.setParserInfo(this.parser.fileName, dleft, dright);
+			throw new aussomException(n, "PARSE_ERROR: Double out of bounds. Double min size is " + String.valueOf(Double.MIN_NORMAL) + ". <" + val.toString() + ">", "");
+		}
+		
+		astDouble ad = new astDouble(val.doubleValue());
+		ad.setParserInfo(this.parser.fileName, dleft, dright);
+		RESULT = ad;
+	:} %prec UMINUS
+;
+
+expString ::=
+	STRING:s
+	{:
+		astString as = new astString(s);
+		as.setParserInfo(this.parser.fileName, sleft, sright);
+		RESULT = as;
+	:}
+;
+
+expList ::=
+	LBRACE expListItems:l RBRACE
+	{:
+		astList al = new astList(l);
+		al.setParserInfo(this.parser.fileName, lleft, lright);
+		RESULT = (astNode)al;
+	:}
+|	LBRACE:l RBRACE
+	{:
+		astList al = new astList();
+		al.setParserInfo(this.parser.fileName, lleft, lright);
+		RESULT = (astNode)al;
+	:}
+;
+
+expListItems ::=
+	expListIndividual:i
+	{:
+		ArrayList<astNode> l = new ArrayList<astNode>();
+		l.add(i);
+		RESULT = l;
+	:}
+|	expListItems:l COMMA expListIndividual:i
+	{:
+		l.add(i);
+		RESULT = l;
+	:}
+;
+
+expListIndividual ::=
+	expBool:b
+	{:
+		RESULT = b;
+	:}
+|	expInt:i
+	{:
+		RESULT = i;
+	:}
+|	expDouble:d
+	{:
+		RESULT = d;
+	:}
+|	expString:s
+	{:
+		RESULT = s;
+	:}
+|	expList:l
+	{:
+		RESULT = l;
+	:}
+|	expMap:d
+	{:
+		RESULT = d;
+	:}
+;
+
+expMap ::=
+	LBRACKET expMapItems:d RBRACKET
+	{:
+		astMap ad = new astMap(d);
+		ad.setParserInfo(this.parser.fileName, dleft, dright);
+		RESULT = (astNode)ad;
+	:}
+|	LBRACKET:m RBRACKET
+	{:
+		astMap am = new astMap();
+		am.setParserInfo(this.parser.fileName, mleft, mright);
+		RESULT = (astNode)am;
+	:}
+;
+
+expMapItems ::=
+	expString:s COLON expListIndividual:i
+	{:
+		Map<astNode, astNode> d = new ConcurrentHashMap<astNode, astNode>();
+		d.put(s, i);
+		RESULT = d;
+	:}
+|	expVar:v COLON expListIndividual:i
+	{:
+		Map<astNode, astNode> d = new ConcurrentHashMap<astNode, astNode>();
+		d.put(v, i);
+		RESULT = d;
+	:}	
+|	expMapItems:d COMMA expString:s COLON expListIndividual:i
+	{:
+		d.put(s, i);
+		RESULT = d;
+	:}
+|	expMapItems:d COMMA expVar:v COLON expListIndividual:i
+	{:
+		d.put(v, i);
+		RESULT = d;
+	:}
+;
+
+expVar ::=
+	IDENT:s
+	{:
+		astVar av = new astVar();
+		av.setParserInfo(this.parser.fileName, sleft, sright);
+		av.setName(s);
+		RESULT = av;
+	:}
+;
+
+expFunctDef ::=
+	IDENT:s
+	{:
+		astFunctDef afd = new astFunctDef(s);
+		afd.setParserInfo(this.parser.fileName, sleft, sright);
+		RESULT = (astNode)afd;
+	:}
+;
+
+expBreak ::=
+	BREAK:b
+	{:
+		astBreak ab = new astBreak();
+		ab.setParserInfo(this.parser.fileName, bleft, bright);
+		RESULT = ab;
+	:}
+;
+
+expEtcetera ::=
+	ETCETERA:e
+	{:
+		astEtcetera etc = new astEtcetera();
+		etc.setParserInfo(this.parser.fileName, eleft, eright);
+		RESULT = etc;
+	:}
+;
+
+expCallback ::=
+	CALLBACK:c IDENT:s
+	{:
+		astCallback cb = new astCallback(s);
+		cb.setParserInfo(this.parser.fileName, cleft, cright);
+		RESULT = cb;
+	:}
+;
+
+expNewList ::=
+	LBRACE expNewListItems:el RBRACE
+	{:
+		RESULT = el;
+	:}
+;
+
+expNewListItems ::=
+	/* Empty */
+	{:
+		RESULT = new astList();
+	:}
+|	expression:el
+	{:
+		astList al = new astList();
+		al.add(el);
+		RESULT = al;
+	:}
+|	expNewListItems:nl COMMA expression:el
+	{:
+		nl.add(el);
+		RESULT = nl;
+	:}
+;
+
+expNewMap ::=
+	LBRACKET expNewMapItems:em RBRACKET
+	{:
+		RESULT = em;
+	:}
+;
+
+expNewMapItems ::=
+	/* Empty */
+	{:
+		RESULT = new astMap();
+	:}
+|	expression:el COLON expression:er
+	{:
+		astMap am = new astMap();
+		am.setParserInfo(this.parser.fileName, elleft, elright);
+		am.add(el, er);
+		RESULT = am;
+	:}
+|	expNewMapItems:am COMMA expression:el COLON expression:er
+	{:
+		am.add(el, er);
+		RESULT = am;
+	:}
+;
+
+expThrow ::=
+	THROW:t expression:e
+	{:
+		astThrow at = new astThrow();
+		at.setParserInfo(this.parser.fileName, tleft, tright);
+		at.setExpression(e);
+		RESULT = at;
+	:}
+;

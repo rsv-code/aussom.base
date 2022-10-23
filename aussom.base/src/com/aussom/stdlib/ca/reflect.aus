@@ -1,0 +1,49 @@
+/*
+ * Copyright 2021 Austin Lehman
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/*
+ * reflect.aus
+ */
+static extern class reflect : com.aussom.stdlib.AReflect {
+	// Reflection functions.
+	public evalStr(string CodeStr, string Name = "evalStr") { this._evalStr(CodeStr, Name); return this; }
+	public evalFile(string FileName) { this._evalFile(FileName); return this; }
+	public includeModule(string ModuleName) { this._includeModule(ModuleName); return this; }
+	
+	// Not Chained
+	public extern loadedModules();
+	public extern loadedClasses();
+	public extern isModuleLoaded(string ModuleName);
+	public extern classExists(string ClassName);
+	public extern getClassDef(string ClassName);
+	public extern instantiate(string ClassName);
+	public extern invoke(object Object, string MethodName, ...);
+	
+	// Chained extern functions
+	private extern _evalStr(string CodeStr, string Name = "evalStr");
+	private extern _evalFile(string FileName);
+	private extern _includeModule(string ModuleName);
+}
+	
+extern class rclass : com.aussom.stdlib.AClass {
+	// Class object provided by reflection.
+	public extern getName();
+	public extern isStatic();
+	public extern isExtern();
+	public extern getExternClassName();
+	public extern getMembers();
+	public extern getMethods();
+}

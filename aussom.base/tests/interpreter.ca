@@ -1,0 +1,1137 @@
+/*
+ * Copyright 2017 Austin Lehman
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+include cunit;
+include math;
+include sys;
+include inctest;
+
+enum numName {
+	one;
+	two;
+	three;
+}
+
+class email {
+	public address = "";
+	
+	public setAddress(string Address) { this.address = Address; }
+	public getAddress() { return this.address; }
+}
+
+/**
+ * User class. This class holds the user information.
+ */
+class user {
+    /**
+     * Defines the users first name.
+     */
+	public firstName = "";
+
+	/**
+	 * Defines the users last name.
+	 */
+	public lastName = "";
+
+	/**
+	 * Defines the users email address.
+	 */
+	public emailAddress = null;
+
+	/**
+	 * Default constructor creates a new user object and
+	 * also sets a default email object.
+	 */
+	public user() { this.emailAddress = new email(); }
+
+	/**
+	 * Sets the fist and last name with the provided values.
+	 * @p First is a string with the first name to set.
+	 * @p Last is a string with the last name to set.
+	 * @r This object.
+	 */
+	public setName(string First, string Last) { this.firstName = First; this.lastName = Last; return this; }
+
+	/**
+	 * Gets the first and last name divided by a space.
+	 * @r A string with with the first and last name.
+	 */
+	public getName() { return this.firstName + " " + this.lastName; }
+}
+
+class atest {
+	public pub = 'Pub';
+	pri = 'Pri';
+
+	private priMeth() { return true; }
+	public pubMeth() { return true; }
+}
+
+class cont {
+	public c = null;
+	public cont() { this.c = new atest(); }
+}
+
+class dog {
+	public breed = "undef";
+	public dog(string Breed) { this.breed = Breed; }
+}
+
+class interpreterTests : test {
+	// public member used for testing
+	public member = null;
+	
+	// access tests
+	obj = null;
+	
+	// Members used for definition testing.
+	public mem;
+	public memNull = null;
+	public memBool = false;
+	public memInt = 10;
+	public memDouble = 123.456;
+	public memString = "hi";
+	public memList = ['one', 'two', 'three'];
+	public memMap = { 'one' : 1, 'two' : 2, 'three' : 3 };
+	public memNestedList = [ 0, 1, { 'one' : 1, 'two' : 2 } ];
+	public memNestedMap = { 'one' : 1, 'two' : 2, 'three' : [ 0, 1, 2 ] };
+	public memObj = null;
+	public en = null;
+
+	// Lang members.
+	private tlist = null;
+	private tmap = null;
+	private dt = null;
+	private buff = null;
+	private cb = null;
+
+	public main(args) {
+		// Start time mills.
+		start = sys.getMills();
+		
+		// Instantiate our test and then run it.
+		tt = new interpreterTests();
+		tt.run();
+		
+		end = sys.getMills();
+		c.log("Elapsed: " + ((end - start)/1000) + "s");
+	}
+	
+	/*
+	 * Test constructor. We set the test name here and do 
+	 * any initialization we need for the test here.
+	 */
+	public interpreterTests() {
+		this.setName("Aussom Interpreter");
+		
+		// Local variable assignment tests
+		this
+			.add("(local assignment) Assign variable null.", ::assignLocalNull)
+			.add("(local assignment) Assign variable bool.", ::assignLocalBool)
+			.add("(local assignment) Assign variable int.", ::assignLocalInt)
+			.add("(local assignment) Assign variable double.", ::assignLocalDouble)
+			.add("(local assignment) Assign variable string.", ::assignLocalString)
+			.add("(local assignment) Assign variable list.", ::assignLocalList)
+			.add("(local assignment) Assign variable map.", ::assignLocalMap)
+		;
+		
+		// Member variable assignment tests
+		this
+			.add("(member assignment) Assign variable null.", ::assignMemberNull)
+			.add("(member assignment) Assign variable bool.", ::assignMemberBool)
+			.add("(member assignment) Assign variable int.", ::assignMemberInt)
+			.add("(member assignment) Assign variable double.", ::assignMemberDouble)
+			.add("(member assignment) Assign variable string.", ::assignMemberString)
+			.add("(member assignment) Assign variable list.", ::assignMemberList)
+			.add("(member assignment) Assign variable map.", ::assignMemberMap)
+		;
+		
+		// Member variable definition tests
+		this
+			.add("(member definition) Defined member blank.", ::defineMemberBlank)
+			.add("(member definition) Defined member null.", ::defineMemberNull)
+			.add("(member definition) Defined member bool.", ::defineMemberBool)
+			.add("(member definition) Defined member int.", ::defineMemberInt)
+			.add("(member definition) Defined member double.", ::defineMemberDouble)
+			.add("(member definition) Defined member string.", ::defineMemberString)
+			.add("(member definition) Defined member list.", ::defineMemberList)
+			.add("(member definition) Defined member map.", ::defineMemberMap)
+			.add("(member definition) Defined member nested list.", ::defineMemberListNested)
+			.add("(member definition) Defined member nested map.", ::defineMemberMapNested)
+		;
+		
+		// Basic operator tests.
+		this
+			// + oper
+			.add("(+ operator) Bool plus bool.", ::operBoolPlusBool)
+			.add("(+ operator) Bool plus int.", ::operBoolPlusInt)
+			.add("(+ operator) Bool plus double.", ::operBoolPlusDouble)
+			.add("(+ operator) Int plus bool.", ::operIntPlusBool)
+			.add("(+ operator) Int plus int.", ::operIntPlusInt)
+			.add("(+ operator) Int plus double.", ::operIntPlusDouble)
+			.add("(+ operator) Double plus bool.", ::operDoublePlusBool)
+			.add("(+ operator) Double plus int.", ::operDoublePlusInt)
+			.add("(+ operator) Double plus double.", ::operDoublePlusDouble)
+			.add("(+ operator) String plus null.", ::operStringPlusNull)
+			.add("(+ operator) String plus bool.", ::operStringPlusBool)
+			.add("(+ operator) String plus int.", ::operStringPlusInt)
+			.add("(+ operator) String plus double.", ::operStringPlusDouble)
+			.add("(+ operator) String plus string.", ::operStringPlusString)
+			.add("(+ operator) Null plus string.", ::operNullPlusString)
+			.add("(+ operator) Bool plus string.", ::operBoolPlusString)
+			.add("(+ operator) Int plus string.", ::operIntPlusString)
+			.add("(+ operator) Double plus string.", ::operDoublePlusString)
+			// - oper
+			.add("(- operator) Bool minus bool.", ::operBoolMinusBool)
+			.add("(- operator) Bool minus int.", ::operBoolMinusInt)
+			.add("(- operator) Bool minus double.", ::operBoolMinusDouble)
+			.add("(- operator) Int minus bool.", ::operIntMinusBool)
+			.add("(- operator) Int minus int.", ::operIntMinusInt)
+			.add("(- operator) Int minus double.", ::operIntMinusDouble)
+			.add("(- operator) Double minus bool.", ::operDoubleMinusBool)
+			.add("(- operator) Double minus int.", ::operDoubleMinusInt)
+			.add("(- operator) Double minus double.", ::operDoubleMinusDouble)
+			// * oper
+			.add("(* operator) Bool times bool.", ::operBoolTimesBool)
+			.add("(* operator) Bool times int.", ::operBoolTimesInt)
+			.add("(* operator) Bool times double.", ::operBoolTimesDouble)
+			.add("(* operator) Int times bool.", ::operIntTimesBool)
+			.add("(* operator) Int times int.", ::operIntTimesInt)
+			.add("(* operator) Int times double.", ::operIntTimesDouble)
+			.add("(* operator) Double times bool.", ::operDoubleTimesBool)
+			.add("(* operator) Double times int.", ::operDoubleTimesInt)
+			.add("(* operator) Double times double.", ::operDoubleTimesDouble)
+			// / oper
+			.add("(/ operator) Bool divide bool.", ::operBoolDivideBool)
+			.add("(/ operator) Bool divide int.", ::operBoolDivideInt)
+			.add("(/ operator) Bool divide double.", ::operBoolDivideDouble)
+			.add("(/ operator) Int divide bool.", ::operIntDivideBool)
+			.add("(/ operator) Int divide int.", ::operIntDivideInt)
+			.add("(/ operator) Int divide double.", ::operIntDivideDouble)
+			.add("(/ operator) Double divide bool.", ::operDoubleDivideBool)
+			.add("(/ operator) Double divide int.", ::operDoubleDivideInt)
+			.add("(/ operator) Double divide double.", ::operDoubleDivideDouble)
+			// % oper
+			.add("(% operator) Bool modulus bool.", ::operBoolModulusBool)
+			.add("(% operator) Bool modulus int.", ::operBoolModulusInt)
+			.add("(% operator) Bool modulus double.", ::operBoolModulusDouble)
+			.add("(% operator) Int modulus bool.", ::operIntModulusBool)
+			.add("(% operator) Int modulus int.", ::operIntModulusInt)
+			.add("(% operator) Int modulus double.", ::operIntModulusDouble)
+			.add("(% operator) Double modulus bool.", ::operDoubleModulusBool)
+			.add("(% operator) Double modulus int.", ::operDoubleModulusInt)
+			.add("(% operator) Double modulus double.", ::operDoubleModulusDouble)
+			// # oper
+			.add("(# operator) Local list count.", ::operLocalListCount)
+			.add("(# operator) Local map count.", ::operLocalMapCount)
+			.add("(# operator) Member list count.", ::operMemberListCount)
+			.add("(# operator) Member map count.", ::operMemberMapCount)
+		;
+		
+		// List operations
+		this
+			.add("(list operations) List local append null.", ::listLocalAppendNull)
+			.add("(list operations) List local append bool.", ::listLocalAppendBool)
+			.add("(list operations) List local append int.", ::listLocalAppendInt)
+			.add("(list operations) List local append double.", ::listLocalAppendDouble)
+			.add("(list operations) List local append string.", ::listLocalAppendString)
+			.add("(list operations) List local append local list.", ::listLocalAppendLocalList)
+			.add("(list operations) List local append local map.", ::listLocalAppendLocalMap)
+			.add("(list operations) List member append null.", ::listMemberAppendNull)
+			.add("(list operations) List member append bool.", ::listMemberAppendBool)
+			.add("(list operations) List member append int.", ::listMemberAppendInt)
+			.add("(list operations) List member append double.", ::listMemberAppendDouble)
+			.add("(list operations) List member append string.", ::listMemberAppendString)
+			.add("(list operations) List member append local deref with var.", ::listMemberAppendLocalVarRef)
+			.add("(list operations) List local new list.", ::listLocalNewList)
+			.add("(list operations) List local get by local var.", ::listLocalGetLocalVar)
+		;
+		
+		// Map operations
+		this
+			.add("(map operations) Map member assign string.", ::mapMemberSetString)
+			.add("(map operations) Map member assign local var.", ::mapMemberSetLocalVar)
+			.add("(map operations) Map local set string and assign bool.", ::mapLocalSetStringAssignBool)
+			.add("(map operations) Map local set string and assign int.", ::mapLocalSetStringAssignInt)
+			.add("(map operations) Map local set string and assign double.", ::mapLocalSetStringAssignDouble)
+			.add("(map operations) Map local set string and assign string.", ::mapLocalSetStringAssignString)
+			.add("(map operations) Map local set string and assign list.", ::mapLocalSetStringAssignList)
+			.add("(map operations) Map local set string and assign var list.", ::mapLocalSetStringAssignVarList)
+			.add("(map operations) Map local set string and re-assign var list.", ::mapLocalSetStringReAssignVarList)
+			.add("(map operations) Map local set string and assign map.", ::mapLocalSetStringAssignMap)
+			.add("(map operations) Map local set string and re-assign var list.", ::mapLocalSetStringReAssignVarMap)
+			.add("(map operations) Map local set object ref and assign string.", ::mapLocalObjRefAssignString)
+			.add("(map operations) Map local new map.", ::mapLocalNewMap)
+			.add("(map operations) Map local set/get by local var.", ::mapLocalSetGetLocalVar)
+		;
+		
+		// Instance ofoperator
+		this
+			.add("(instanceof operations) Instance of null.", ::instanceOfNull)
+			.add("(instanceof operations) Instance of bool.", ::instanceOfBool)
+			.add("(instanceof operations) Instance of int.", ::instanceOfInt)
+			.add("(instanceof operations) Instance of double.", ::instanceOfDouble)
+			.add("(instanceof operations) Instance of string.", ::instanceOfString)
+			.add("(instanceof operations) Instance of list.", ::instanceOfList)
+			.add("(instanceof operations) Instance of map.", ::instanceOfMap)
+			.add("(instanceof operations) Instance of callback.", ::instanceOfCallback)
+			.add("(instanceof operations) Object of type user should be of type user.", ::instanceOfObjectUser)
+		;
+		
+		// Object operations
+		this
+			.add("(object operations) Instantiate local object.", ::objectInstantiateLocal)
+			.add("(object operations) Instantiate member object.", ::objectInstantiateMember)
+			.add("(object operations) Local object set member.", ::objectLocalSetMember)
+			.add("(object operations) Member object set member.", ::objectMemberSetMember)
+			.add("(object operations) Local object set sub member.", ::objectLocalSetSubMember)
+			.add("(object operations) Member object set sub member.", ::objectMemberSetSubMember)
+			.add("(object operations) Local object call sub member.", ::objectLocalCallSubMember)
+			.add("(object operations) Member object call sub member.", ::objectMemberCallSubMember)
+			// access pub/pri
+			.add("(object access) Member access for local variable public.", ::objectAccessLocVarPub)
+			.add("(object access) Member access for local variable private.", ::objectAccessLocVarPri)
+			.add("(object access) Method access for local variable public.", ::objectMethAccessLocVarPub)
+			.add("(object access) Method access for local variable private.", ::objectMethAccessLocVarPri)
+			.add("(object access) Member access for member variable public.", ::objectAccessMemVarPub)
+			.add("(object access) Member access for member variable private.", ::objectAccessMemVarPri)
+			.add("(object access) Method access for member variable public.", ::objectMethAccessMemVarPub)
+			.add("(object access) Method access for member variable private.", ::objectMethAccessMemVarPri)
+			.add("(object access) Member access for local variable cont public.", ::objectAccessLocVarContPub)
+			.add("(object access) Member access for local variable cont private.", ::objectAccessLocVarContPri)
+			.add("(object access) Method access for local variable cont public.", ::objectMethAccessLocVarContPub)
+			.add("(object access) Method access for local variable cont private.", ::objectMethAccessLocVarContPri)
+			.add("(object access) Member access for member variable cont public.", ::objectAccessMemVarContPub)
+			.add("(object access) Member access for member variable cont private.", ::objectAccessMemVarContPri)
+			.add("(object access) Method access for member variable cont public.", ::objectMethAccessMemVarContPub)
+			.add("(object access) Method access for member variable cont private.", ::objectMethAccessMemVarContPri)
+		;
+		
+		// Enum operations
+		this
+			.add("(enum operations) Reference enum value.", ::enumReference)
+			.add("(enum operations) Assign local variable enum reference.", ::enumAssignLocalReference)
+			.add("(enum operations) Assign member variable enum reference.", ::enumAssignMemberReference)
+		;
+		
+		// If/Else
+		this
+			.add("(if/else) If/Else statement return true.", ::ifElseIfReturnTrue)
+			.add("(if/else) If/Else statement else return false.", ::ifElseElseReturnFalse)
+			.add("(if/else) If/Else statement else if true.", ::ifElseElseIfTrue)
+		;
+		
+		// lang tests
+		this
+			// type()
+			.add("(lang lang) Lang type of null.", ::langLangTypeNull)
+			.add("(lang lang) Lang type of bool.", ::langLangTypeBool)
+			.add("(lang lang) Lang type of int.", ::langLangTypeInt)
+			.add("(lang lang) Lang type of double.", ::langLangTypeDouble)
+			.add("(lang lang) Lang type of string.", ::langLangTypeString)
+			// call() - callbacks
+			.add("(lang lang) Lang create callback.", ::langLangCreateCallback)
+			.add("(lang lang) Lang call callback.", ::langLangCallCallback)
+			.add("(lang lang) Lang create callback with args.", ::langLangCreateCallbackArgs)
+			.add("(lang lang) Lang call callback with args.", ::langLangCallCallbackArgs)
+			.add("(lang lang) Lang create callback with etc.", ::langLangCreateCallbackEtc)
+			.add("(lang lang) Lang call callback with etc.", ::langLangCallCallbackEtc)
+			.add("(lang lang) Lang create callback with etc count.", ::langLangCreateCallbackEtcCnt)
+			.add("(lang lang) Lang call callback with etc count.", ::langLangCallCallbackEtcCnt)
+			.add("(lang lang) Lang callback member access.", ::langLangCallbackMemberAcc)
+		;
+		
+		// int tests
+		this
+			.add("(lang int) Int max val.", ::intMaxVal)
+			.add("(lang int) Int min val.", ::intMinVal)
+			.add("(lang int) Int to double.", ::intToDouble)
+			.add("(lang int) Int to bool.", ::intToBool)
+			.add("(lang int) Int to string.", ::intToString)
+			.add("(lang int) Int compare.", ::intCompare)
+			.add("(lang int) Int number leading zeros.", ::intNumLeadingZeros)
+			.add("(lang int) Int number trailing zeros.", ::intNumTrailingZeros)
+			.add("(lang int) Int parse.", ::intParse)
+			.add("(lang int) Int reverse.", ::intReverse)
+			.add("(lang int) Int rotate left.", ::intRotateLeft)
+			.add("(lang int) Int rotate right.", ::intRotateRight)
+			.add("(lang int) Int signum.", ::intSignum)
+			.add("(lang int) Int to binary.", ::intToBinary)
+			.add("(lang int) Int to hex.", ::intToHex)
+			.add("(lang int) Int to octal.", ::intToOctal)
+			.add("(lang int) Int to JSON.", ::intToJson)
+		;
+		
+		// bool tests
+		this
+			.add("(lang bool) Bool to int.", ::boolToInt)
+			.add("(lang bool) Bool to double.", ::boolToDouble)
+			.add("(lang bool) Bool to string.", ::boolToString)
+			.add("(lang bool) Bool compare.", ::boolCompare)
+			.add("(lang bool) Bool parse.", ::boolParse)
+			.add("(lang bool) Bool to JSON.", ::boolToJson)
+		;
+		
+		// double tests
+		this
+			.add("(lang double) Double max exponent.", ::doubleMaxExponent)
+			.add("(lang double) Double min exponent.", ::doubleMinExponent)
+			.add("(lang double) Double max value.", ::doubleMaxValue)
+			.add("(lang double) Double min value.", ::doubleMinValue)
+			.add("(lang double) Double min normal value.", ::doubleMinNormalValue)
+			.add("(lang double) Double NaN value.", ::doubleNaNValue)
+			.add("(lang double) Double negative infinity value.", ::doubleNegInfinity)
+			.add("(lang double) Double positive infinity value.", ::doublePosInfinity)
+			.add("(lang double) Double size value.", ::doubleSize)
+			.add("(lang double) Double to int.", ::doubleToInt)
+			.add("(lang double) Double to bool.", ::doubleToBool)
+			.add("(lang double) Double to string.", ::doubleToString)
+			.add("(lang double) Double compare.", ::doubleCompare)
+			.add("(lang double) Double is infinite.", ::doubleIsInfinite)
+			.add("(lang double) Double is NaN.", ::doubleIsNaN)
+			.add("(lang double) Double parse.", ::doubleParse)
+			.add("(lang double) Double to hex.", ::doubleToHex)
+			.add("(lang double) Double to JSON.", ::doubleToJson)
+		;
+		
+		// string tests
+		this
+			.add("(lang string) String char at.", ::stringCharAt)
+			.add("(lang string) String compare.", ::stringCompare)
+			.add("(lang string) String compare ignore case.", ::stringCompareICase)
+			.add("(lang string) String concat.", ::stringConcat)
+			.add("(lang string) String contains.", ::stringContains)
+			.add("(lang string) String ends with.", ::stringEndsWith)
+			.add("(lang string) String equals.", ::stringEquals)
+			.add("(lang string) String equals ignore case.", ::stringEqualsICase)
+			.add("(lang string) String index of.", ::stringIndexOf)
+			.add("(lang string) String index of start.", ::stringIndexOfStart)
+			.add("(lang string) String is empty.", ::stringIsEmpty)
+			.add("(lang string) String last index of.", ::stringLastIndexOf)
+			.add("(lang string) String last index of start.", ::stringLastIndexOfStart)
+			.add("(lang string) String matches.", ::stringMatches)
+			.add("(lang string) String replace.", ::stringReplace)
+			.add("(lang string) String replace first regex.", ::stringReplaceFirstRegex)
+			.add("(lang string) String replace regex.", ::stringReplaceRegex)
+			.add("(lang string) String split.", ::stringSplit)
+			.add("(lang string) String starts with.", ::stringStartsWith)
+			.add("(lang string) String sub string.", ::stringSubstr)
+			.add("(lang string) String sub string end.", ::stringSubstrEnd)
+			.add("(lang string) String to lower case.", ::stringToLower)
+			.add("(lang string) String to upper case.", ::stringToUpper)
+			.add("(lang string) String trim.", ::stringTrim)
+			.add("(lang string) String to JSON.", ::stringToJson)
+		;
+		
+		// list tests
+		this
+			.add("(lang list) List create.", ::listCreate)
+			.add("(lang list) List add.", ::listAdd)
+			.add("(lang list) List add all.", ::listAddAll)
+			.add("(lang list) List add all at.", ::listAddAllAt)
+			.add("(lang list) List clone.", ::listClone)
+			.add("(lang list) List contains object reference.", ::listContainsObjRef)
+			.add("(lang list) List contains.", ::listContains)
+			.add("(lang list) List get.", ::listGet)
+			.add("(lang list) List index of.", ::listIndexOf)
+			.add("(lang list) List is empty.", ::listIsEmpty)
+			.add("(lang list) List remove.", ::listRemove)
+			.add("(lang list) List remove at.", ::listRemoveAt)
+			.add("(lang list) List remove all.", ::listRemoveAll)
+			.add("(lang list) List retain all.", ::listRetainAll)
+			.add("(lang list) List set.", ::listSet)
+			.add("(lang list) List size.", ::listSize)
+			.add("(lang list) List sub list.", ::listSubList)
+			.add("(lang list) List sort.", ::listSort)
+			.add("(lang list) List sort ascending.", ::listSortAsc)
+			.add("(lang list) List sort custom.", ::listSortCustom)
+			.add("(lang list) List clear.", ::listClear)
+			.add("(lang list) List to JSON.", ::listToJson)
+		;
+		
+		// map tests
+		this
+			.add("(lang map) Map create.", ::mapCreate)
+			.add("(lang map) Map contains key.", ::mapContainsKey)
+			.add("(lang map) Map contains value.", ::mapContainsValue)
+			.add("(lang map) Map get.", ::mapGet)
+			.add("(lang map) Map is empty.", ::mapIsEmpty)
+			.add("(lang map) Map key set.", ::mapKeySet)
+			.add("(lang map) Map put.", ::mapPut)
+			.add("(lang map) Map put all.", ::mapPutAll)
+			.add("(lang map) Map put if absent.", ::mapPutIfAbsent)
+			.add("(lang map) Map remove.", ::mapRemove)
+			.add("(lang map) Map size.", ::mapSize)
+			.add("(lang map) Map values.", ::mapValues)
+			.add("(lang map) Map clear.", ::mapClear)
+			.add("(lang map) Map to JSON.", ::mapToJson)
+		;
+		
+		// object tests
+		this
+			.add("(lang object) Object to JSON.", ::objectToJson)
+			.add("(lang object) Object pack.", ::objectPack)
+		;
+		
+		// json tests
+		this
+			.add("(lang json) JSON parse string.", ::jsonParseString)
+			.add("(lang json) JSON unpack object.", ::jsonUnpack)
+		;
+		
+		// buffer tests
+		this
+			.add("(lang buffer) Buffer instantiate.", ::bufferInstantiate)
+			.add("(lang buffer) Buffer size.", ::bufferSize)
+			.add("(lang buffer) Buffer add string.", ::bufferAddString)
+			.add("(lang buffer) Buffer add byte.", ::bufferAddByte)
+			.add("(lang buffer) Buffer add unsigned byte.", ::bufferAddUByte)
+			.add("(lang buffer) Buffer add short.", ::bufferAddShort)
+			.add("(lang buffer) Buffer add unsigned short.", ::bufferAddUShort)
+			.add("(lang buffer) Buffer add int.", ::bufferAddInt)
+			.add("(lang buffer) Buffer add unsigned int.", ::bufferAddUInt)
+			.add("(lang buffer) Buffer add long.", ::bufferAddLong)
+			.add("(lang buffer) Buffer add float.", ::bufferAddFloat)
+			.add("(lang buffer) Buffer add double.", ::bufferAddDouble)
+			.add("(lang buffer) Buffer get write cursor.", ::bufferGetWriteCursor)
+			.add("(lang buffer) Buffer get read cursor.", ::bufferGetReadCursor)
+			.add("(lang buffer) Buffer set string.", ::bufferSetString)
+			.add("(lang buffer) Buffer set byte.", ::bufferSetByte)
+			.add("(lang buffer) Buffer set unsigned byte.", ::bufferSetUByte)
+			.add("(lang buffer) Buffer set short.", ::bufferSetShort)
+			.add("(lang buffer) Buffer set unsigned short.", ::bufferSetUShort)
+			.add("(lang buffer) Buffer set int.", ::bufferSetInt)
+			.add("(lang buffer) Buffer set unsigned int.", ::bufferSetUInt)
+			.add("(lang buffer) Buffer set long.", ::bufferSetLong)
+			.add("(lang buffer) Buffer set float.", ::bufferSetFloat)
+			.add("(lang buffer) Buffer set double.", ::bufferSetDouble)
+			.add("(lang buffer) Buffer copy from.", ::bufferCopyFrom)
+			.add("(lang buffer) Buffer copy to.", ::bufferCopyTo)
+			.add("(lang buffer) Buffer byte to binary.", ::bufferByteToBinary)
+			.add("(lang buffer) Buffer short to binary.", ::bufferShortToBinary)
+			.add("(lang buffer) Buffer int to binary.", ::bufferIntToBinary)
+			.add("(lang buffer) Buffer long to binary.", ::bufferLongToBinary)
+			.add("(lang buffer) Buffer float to binary.", ::bufferFloatToBinary)
+			.add("(lang buffer) Buffer double to binary.", ::bufferDoubleToBinary)
+			.add("(lang buffer) Buffer clearn.", ::bufferClear)
+		;
+		
+		// date tests
+		this
+			.add("(lang date) Date instantiate.", ::dateInstantiate)
+			.add("(lang date) Date set hours.", ::dateSetHours)
+			.add("(lang date) Date set minutes.", ::dateSetMinutes)
+			.add("(lang date) Date set seconds.", ::dateSetSeconds)
+			.add("(lang date) Date set time.", ::dateSetTime)
+			.add("(lang date) Date to string.", ::dateToString)
+			.add("(lang date) Date parse.", ::dateParse)
+			.add("(lang date) Date format.", ::dateFormat)
+			.add("(lang date) Date is epoch.", ::dateIsEpoch)
+		;
+		
+		// security manager tests
+		this
+			.add("(lang secman) Security manager get property.", ::secmanGetProp)
+			.add("(lang secman) Security manager set property.", ::secmanSetProp)
+			.add("(lang secman) Security manager get key set.", ::secmanKeySet)
+			.add("(lang secman) Security manager get map of values.", ::secmanGetMap)
+			.add("(lang secman) Security manager instantiate.", ::secmanInstantiate)
+			.add("(lang secman) Security manager set property.", ::secmanSetProp)
+			.add("(lang secman) Security manager set map.", ::secmanSetMap)
+		;
+		
+		// resource loading tests
+		this
+			.add("(lang resource include) Include inctest object.", ::resNewInctest)
+			.add("(lang class aussomdoc) Get class aussomdoc.", ::langClassAussomdoc)
+		;
+	}
+	
+	/*
+	 **********************************************************************
+	 * Local variable assignments.
+	 *********************************************************************/
+	public assignLocalNull() { var = null; return this.expectNull(var); }
+	public assignLocalBool() { var = true; return this.expect(var, true); }
+	public assignLocalInt() { var = 1; return this.expect(var, 1); }
+	public assignLocalDouble() { var = 12345.6789; return this.expect(var, 12345.6789); }
+	public assignLocalString() { var = "hello world"; return this.expect(var, "hello world"); }
+	public assignLocalList() { var = []; return this.expectList(var); }
+	public assignLocalMap() { var = {}; return this.expectMap(var); }
+	
+	/*
+	 **********************************************************************
+	 * Member variable assignments.
+	 *********************************************************************/
+	public assignMemberNull() { this.member = null; return this.expectNull(this.member); }
+	public assignMemberBool() { this.member = true; return this.expect(this.member, true); }
+	public assignMemberInt() { this.member = 1; return this.expect(this.member, 1); }
+	public assignMemberDouble() { this.member = 12345.6789; return this.expect(this.member, 12345.6789); }
+	public assignMemberString() { this.member = "hello world"; return this.expect(this.member, "hello world"); }
+	public assignMemberList() { this.member = []; return this.expectList(this.member); }
+	public assignMemberMap() { this.member = {}; return this.expectMap(this.member); }
+	
+	/*
+	 **********************************************************************
+	 * Member variable definitions.
+	 *********************************************************************/
+	public defineMemberBlank() { return this.expectNull(this.mem); }
+	public defineMemberNull() { return this.expectNull(this.memNull); }
+	public defineMemberBool() { return this.expect(this.memBool, false); }
+	public defineMemberInt() { return this.expect(this.memInt, 10); }
+	public defineMemberDouble() { return this.expect(this.memDouble, 123.456); }
+	public defineMemberString() { return this.expect(this.memString, "hi"); }
+	public defineMemberList() { return this.expect(this.memList[2], "three"); }
+	public defineMemberMap() { return this.expect(this.memMap['three'], 3); }
+	public defineMemberListNested() { return this.expect(this.memNestedList[2]['two'], 2); }
+	public defineMemberMapNested() { return this.expect(this.memNestedMap['three'][2], 2); }
+	 
+	 /*
+	  **********************************************************************
+	  * Basic operator tests
+	  *********************************************************************/
+	 // Numeric +
+	 public operBoolPlusBool() { var = true + true; return this.expect(var, 2); }
+	 public operBoolPlusInt() { var = true + 5; return this.expect(var, 6); }
+	 public operBoolPlusDouble() { var = true + 5.0; return this.expect(var, 6.0); }
+	 public operIntPlusBool() { var = 5 + true; return this.expect(var, 6); }
+	 public operIntPlusInt() { var = 5 + 10; return this.expect(var, 15); }
+	 public operIntPlusDouble() { var = 5 + 10.0; return this.expect(var, 15.0); }
+	 public operDoublePlusBool() { var = 5.0 + true; return this.expect(var, 6.0); }
+	 public operDoublePlusInt() { var = 5.0 + 10; return this.expect(var, 15.0); }
+	 public operDoublePlusDouble() { var = 5.0 + 10.0; return this.expect(var, 15.0); }
+	 // String +
+	 public operStringPlusNull() { var = "is " + null; return this.expect(var, "is null"); }
+	 public operStringPlusBool() { var = "is " + true; return this.expect(var, "is true"); }
+	 public operStringPlusInt() { var = "is " + 1; return this.expect(var, "is 1"); }
+	 public operStringPlusDouble() { var = "is " + 123.456; return this.expect(var, "is 123.456"); }
+	 public operStringPlusString() { var = "is " + "string"; return this.expect(var, "is string"); }
+	 public operNullPlusString() { var = null + " is"; return this.expect(var, "null is"); }
+	 public operBoolPlusString() { var = true + " is"; return this.expect(var, "true is"); }
+	 public operIntPlusString() { var = 1 + " is"; return this.expect(var, "1 is"); }
+	 public operDoublePlusString() { var = 123.456 + " is"; return this.expect(var, "123.456 is"); }
+	 // Numeric -
+	 public operBoolMinusBool() { var = true - true; return this.expect(var, 0); }
+	 public operBoolMinusInt() { var = true - 2; return this.expect(var, -1); }
+	 public operBoolMinusDouble() { var = true - 2.0; return this.expect(var, -1.0); }
+	 public operIntMinusBool() { var = 2 - true; return this.expect(var, 1); }
+	 public operIntMinusInt() { var = 2 - 1; return this.expect(var, 1); }
+	 public operIntMinusDouble() { var = 2 - 1.0; return this.expect(var, 1.0); }
+	 public operDoubleMinusBool() { var = 2.0 - true; return this.expect(var, 1.0); }
+	 public operDoubleMinusInt() { var = 2.0 - 1; return this.expect(var, 1.0); }
+	 public operDoubleMinusDouble() { var = 2.0 - 1.0; return this.expect(var, 1.0); }
+	 // Numeric *
+	 public operBoolTimesBool() { var = true * true; return this.expect(var, 1); }
+	 public operBoolTimesInt() { var = true * 10; return this.expect(var, 10); }
+	 public operBoolTimesDouble() { var = true * 10.0; return this.expect(var, 10.0); }
+	 public operIntTimesBool() { var = 10 * true; return this.expect(var, 10); }
+	 public operIntTimesInt() { var = 10 * 2; return this.expect(var, 20); }
+	 public operIntTimesDouble() { var = 10 * 2.0; return this.expect(var, 20.0); }
+	 public operDoubleTimesBool() { var = 2.0 * true; return this.expect(var, 2.0); }
+	 public operDoubleTimesInt() { var = 2.0 * 2; return this.expect(var, 4.0); }
+	 public operDoubleTimesDouble() { var = 2.0 * 2.0; return this.expect(var, 4.0); }
+	 // Numeric /
+	 public operBoolDivideBool() { var = true / true; return this.expect(var, 1); }
+	 public operBoolDivideInt() { var = true / 1; return this.expect(var, 1); }
+	 public operBoolDivideDouble() { var = true / 1.0; return this.expect(var, 1.0); }
+	 public operIntDivideBool() { var = 10 / true; return this.expect(var, 10); }
+	 public operIntDivideInt() { var = 10 / 2; return this.expect(var, 5); }
+	 public operIntDivideDouble() { var = 10 / 2.0; return this.expect(var, 5.0); }
+	 public operDoubleDivideBool() { var = 2.0 / true; return this.expect(var, 2.0); }
+	 public operDoubleDivideInt() { var = 2.0 / 2; return this.expect(var, 1.0); }
+	 public operDoubleDivideDouble() { var = 2.0 / 2.0; return this.expect(var, 1.0); }
+	 // Numeric %
+	 public operBoolModulusBool() { var = true % true; return this.expect(var, 0.0); }
+	 public operBoolModulusInt() { var = true % 1; return this.expect(var, 0.0); }
+	 public operBoolModulusDouble() { var = true % 1.0; return this.expect(var, 0.0); }
+	 public operIntModulusBool() { var = 10 % true; return this.expect(var, 0.0); }
+	 public operIntModulusInt() { var = 10 % 4; return this.expect(var, 2); }
+	 public operIntModulusDouble() { var = 10 % 4.0; return this.expect(var, 2.0); }
+	 public operDoubleModulusBool() { var = 2.0 % true; return this.expect(var, 0.0); }
+	 public operDoubleModulusInt() { var = 2.0 % 2; return this.expect(var, 0.0); }
+	 public operDoubleModulusDouble() { var = 2.0 % 2.0; return this.expect(var, 0.0); }
+	 // Count #
+	 public operLocalListCount() { var = []; var @= "Tyler"; return this.expect(#var - 1, 0); }
+	 public operLocalMapCount() { var = {}; var['char'] = "Tyler"; return this.expect(#var, 1); }
+	 public operMemberListCount() { return this.expect(#this.memList, 3); }
+	 public operMemberMapCount() { return this.expect(#this.memMap, 3); }
+	 
+	 /*
+	  **********************************************************************
+	  * List operations.
+	  *********************************************************************/
+	 public listLocalAppendNull() { tmp = []; tmp @= null; return this.expectNull(tmp[0]); }
+	 public listLocalAppendBool() { tmp = []; tmp @= true; return this.expect(tmp[0], true); }
+	 public listLocalAppendInt() { tmp = []; tmp @= 32; return this.expect(tmp[0], 32); }
+	 public listLocalAppendDouble() { tmp = []; tmp @= 3.1514; return this.expect(tmp[0], 3.1514); }
+	 public listLocalAppendString() { tmp = []; tmp @= "Tyler"; return this.expect(tmp[0], "Tyler"); }
+	 public listLocalAppendLocalList() { tmp = []; lst = []; lst @= "Tyler"; tmp @= lst; return this.expect(tmp[0][0], "Tyler"); }
+	 public listLocalAppendLocalMap() { tmp = []; mp = {}; mp['char'] = "Tyler"; tmp @= mp; return this.expect(tmp[0]['char'], "Tyler"); }
+	 public listMemberAppendNull() { this.memList @= null; return this.expect(this.memList[3], null); }
+	 public listMemberAppendBool() { this.memList @= true; return this.expect(this.memList[4], true); }
+	 public listMemberAppendInt() { this.memList @= 32; return this.expect(this.memList[5], 32); }
+	 public listMemberAppendDouble() { this.memList @= 3.1415; return this.expect(this.memList[6], 3.1415); }
+	 public listMemberAppendString() { this.memList @= "Tyler"; return this.expect(this.memList[7], "Tyler"); }
+	 public listMemberAppendLocalVarRef() { var = 8; this.memList @= "Durden"; return this.expect(this.memList[var], "Durden"); }
+	 public listLocalNewList() {
+	 	lst = [1, 2, 3, 'four', [1, 2, 3]];
+	 	return this.expect(lst[0] == 1 && lst[1] == 2 && lst[2] == 3 && lst[3] == 'four' && lst[4] instanceof 'list', true);
+	 }
+	 public listLocalGetLocalVar() {
+	 	lst = ['one', 'two', 'three'];
+	 	ind = 1;
+	 	return this.expect(lst[ind], 'two');
+	 }
+	 
+	 /*
+	  **********************************************************************
+	  * Map operations.
+	  *********************************************************************/
+	 public mapMemberSetString() { this.memMap['name'] = "Tyler"; return this.expect(this.memMap['name'], "Tyler"); }
+	 public mapMemberSetLocalVar() {
+	 	var = 'lname';
+	 	this.memMap[var] = "Durden";
+	 	return this.expect(this.memMap[var], "Durden");
+	 }
+	 public mapLocalSetStringAssignBool() { tmp = {}; tmp['val'] = true; return this.expect(tmp['val'], true); }
+	 public mapLocalSetStringReAssignBool() { tmp = {}; tmp['val'] = true; tmp['val'] = false; return this.expect(tmp['val'], false); }
+	 public mapLocalSetStringAssignInt() { tmp = {}; tmp['val'] = 10; return this.expect(tmp['val'], 10); }
+	 public mapLocalSetStringAssignDouble() { tmp = {}; tmp['val'] = 123.456; return this.expect(tmp['val'], 123.456); }
+	 public mapLocalSetStringAssignString() { tmp = {}; tmp['val'] = "test"; return this.expect(tmp['val'], "test"); }
+	 public mapLocalSetStringAssignList() { tmp = {}; tmp['val'] = []; return this.expectList(tmp['val']); }
+	 public mapLocalSetStringAssignVarList() { tmp = {}; lst = []; tmp['val'] = lst; return this.expectList(tmp['val']); }
+	 public mapLocalSetStringReAssignVarList() { tmp = {}; lst = []; tmp['val'] = lst; tmp['val'] = lst; return this.expectList(tmp['val']); }
+	 public mapLocalSetStringAssignMap() { tmp = {}; tmp['val'] = {}; return this.expectMap(tmp['val']); }
+	 public mapLocalSetStringReAssignVarMap() { tmp = {}; tmp['val'] = {}; tmp['val'] = {}; return this.expectMap(tmp['val']); }
+	 public mapLocalObjRefAssignString() {
+	 	tobj = new email();
+	 	tobj.address = 'name';
+	 	tmap = {};
+	 	tmap[tobj.address] = 'Tyler';
+	 	return this.expect(tmap[tobj.address], 'Tyler');
+	 }
+	 public mapLocalNewMap() {
+	 	mp = { 'one': 1, 'two': 2, 'three': 3, 'four': 'something' };
+	 	return this.expect(mp['one'] == 1 && mp['two'] == 2 && mp['three'] == 3 && mp['four'] == 'something', true);
+	 }
+	 public mapLocalSetGetLocalVar() {
+	 	mp = {};
+	 	key = 'name';
+	 	mp[key] = 'Tyler';
+	 	return this.expect(mp[key], 'Tyler');
+	 }
+	 
+	 
+	 /*
+	  **********************************************************************
+	  * instanceof operator tests
+	  *********************************************************************/
+	 public instanceOfNull() { tmp = null; return this.expect(tmp instanceof 'null', true); }
+	 public instanceOfBool() { tmp = true; return this.expect(tmp instanceof 'bool', true); }
+	 public instanceOfInt() { tmp = 32; return this.expect(tmp instanceof 'int', true); }
+	 public instanceOfDouble() { tmp = 3.1415; return this.expect(tmp instanceof 'double', true); }
+	 public instanceOfString() { tmp = "Tyler"; return this.expect(tmp instanceof 'string', true); }
+	 public instanceOfList() { tmp = []; return this.expect(tmp instanceof 'list', true); }
+	 public instanceOfMap() { tmp = {}; return this.expect(tmp instanceof 'map', true); }
+	 public instanceOfCallback() { tmp = ::instanceOfCallback; return this.expect(tmp instanceof 'callback', true); }
+	 public instanceOfObjectUser() { usr = new user(); usr.firstName = "Tyler"; usr.lastName = "Durden"; return this.expect(usr instanceof 'user', true); }
+	 
+	 /*
+	  **********************************************************************
+	  * object operations tests
+	  *********************************************************************/
+	 public objectInstantiateLocal() { me = new user(); me.setName("Tyler", "Durden"); return this.expect(me.getName(), "Tyler Durden"); }
+	 public objectInstantiateMember() { this.memObj = new user(); this.memObj.setName("Tyler", "Durden"); return this.expect(this.memObj.getName(), "Tyler Durden"); }
+	 public objectLocalSetMember() { me = new user(); me.firstName = "Tyler"; return this.expect(me.getName(), "Tyler "); }
+	 public objectMemberSetMember() { this.memObj.firstName = "Austin"; return this.expect(this.memObj.getName(), "Austin Durden"); }
+	 public objectLocalSetSubMember() { me = new user(); me.emailAddress.address = "one@two.com"; return this.expect(me.emailAddress.address, "one@two.com"); }
+	 public objectMemberSetSubMember() { this.memObj.emailAddress.address = "one@two.com"; return this.expect(this.memObj.emailAddress.address, "one@two.com"); }
+	 public objectLocalCallSubMember() { me = new user(); me.emailAddress.setAddress("one@two.com"); return this.expect(me.emailAddress.getAddress(), "one@two.com"); }
+	 public objectMemberCallSubMember() { this.memObj.emailAddress.setAddress("one@two.com"); return this.expect(this.memObj.emailAddress.getAddress(), "one@two.com"); }
+	 // access public/private
+	 public objectAccessLocVarPub() { l = new atest(); ex = false; try { t = l.pub; } catch(e) { ex = true; } return this.expect(ex, false); }
+	 public objectAccessLocVarPri() { l = new atest(); ex = false; try { t = l.pri; } catch(e) { ex = true; } return this.expect(ex, true); }
+	 public objectMethAccessLocVarPub() { l = new atest(); ex = false; try { t = l.pubMeth(); } catch(e) { ex = true; } return this.expect(ex, false); }
+	 public objectMethAccessLocVarPri() { l = new atest(); ex = false; try { t = l.priMeth(); } catch(e) { ex = true; } return this.expect(ex, true); }
+	 public objectAccessMemVarPub() { this.obj = new atest(); ex = false; try { t = this.obj.pub; } catch(e) { ex = true; } return this.expect(ex, false); }
+	 public objectAccessMemVarPri() { ex = false; try { t = this.obj.pri; } catch(e) { ex = true; } return this.expect(ex, true); }
+	 public objectMethAccessMemVarPub() { ex = false; try { t = this.obj.pubMeth(); } catch(e) { ex = true; } return this.expect(ex, false); }
+	 public objectMethAccessMemVarPri() { ex = false; try { t = this.obj.priMeth(); } catch(e) { ex = true; } return this.expect(ex, true); }
+	 public objectAccessLocVarContPub() { l = new cont(); ex = false; try { t = l.c.pub; } catch(e) { ex = true; } return this.expect(ex, false); }
+	 public objectAccessLocVarContPri() { l = new cont(); ex = false; try { t = l.c.pri; } catch(e) { ex = true; } return this.expect(ex, true); }
+	 public objectMethAccessLocVarContPub() { l = new cont(); ex = false; try { t = l.c.pubMeth(); } catch(e) { ex = true; } return this.expect(ex, false); }
+	 public objectMethAccessLocVarContPri() { l = new cont(); ex = false; try { t = l.c.priMeth(); } catch(e) { ex = true; } return this.expect(ex, true); }
+	 public objectAccessMemVarContPub() { this.obj = new cont(); ex = false; try { t = this.obj.c.pub; } catch(e) { ex = true; } return this.expect(ex, false); }
+	 public objectAccessMemVarContPri() { ex = false; try { t = this.obj.c.pri; } catch(e) { ex = true; } return this.expect(ex, true); }
+	 public objectMethAccessMemVarContPub() { ex = false; try { t = this.obj.c.pubMeth(); } catch(e) { ex = true; } return this.expect(ex, false); }
+	 public objectMethAccessMemVarContPri() { ex = false; try { t = this.obj.c.priMeth(); } catch(e) { ex = true; } return this.expect(ex, true); }
+	 
+	 /*
+	  **********************************************************************
+      * enum tests
+      *********************************************************************/
+	 public enumReference() { return this.expect(numName.one, 'one'); }
+	 public enumAssignLocalReference() { tmp = numName.two; return this.expect(tmp, 'two'); }
+	 public enumAssignMemberReference() { this.en = numName.three; return this.expect(this.en, 'three'); }
+	 
+	 /*
+	  **********************************************************************
+	  * if/else tests
+	  *********************************************************************/
+	 public ifElseIfReturnTrue() { return this.expect(this.ifElseReturnTrue(), true); }
+	 public ifElseElseReturnFalse() { return this.expect(this.ifElseReturnFalse(), false); }
+	 public ifElseReturnTrue() {
+	 	if(true) { return true; }
+	 	else { return false; }
+	 }
+	 public ifElseReturnFalse() {
+	 	if(false) { return true; }
+	 	else { return false; }
+	 }
+	 public ifElseElseIfTrue() {
+	 	res = null;
+	 	if(false) { res = false; }
+	 	else if(true) { res = true; }
+	 	else { res = false; }
+	 	return this.expect(res, true);
+	 }
+	 
+	 /*
+	  **********************************************************************
+	  * lang tests
+	  *********************************************************************/
+	public langLangTypeNull() { return this.expect(lang.type(null), 'null'); }
+	public langLangTypeBool() { return this.expect(lang.type(true), 'bool'); }
+	public langLangTypeInt() { return this.expect(lang.type(32), 'int'); }
+	public langLangTypeDouble() { return this.expect(lang.type(3.1415), 'double'); }
+	public langLangTypeString() { return this.expect(lang.type("Austin"), 'string'); }
+	public langLangCreateCallback() { this.cb = ::toCall; return this.expectCallback(this.cb); }
+	public langLangCallCallback() { ret = this.cb.call(); return this.expect(ret, true); }
+	public langLangCreateCallbackArgs() { this.cb = ::toCallWithArgs; return this.expectCallback(this.cb); }
+	public langLangCallCallbackArgs() { ret = this.cb.call('hi', 'there'); return this.expect(ret, 'there'); }
+	public langLangCreateCallbackEtc() { this.cb = ::toCallWithEtc; return this.expectCallback(this.cb); }
+	public langLangCallCallbackEtc() { ret = this.cb.call('hi', 'there'); return this.expect(ret, 'hi'); }
+	public langLangCreateCallbackEtcCnt() { this.cb = ::toCallWithEtcCnt; return this.expectCallback(this.cb); }
+	public langLangCallCallbackEtcCnt() { ret = this.cb.call('hi', 'there', 1, 2, 3); return this.expect(ret, 4); }
+	public langLangCallbackMemberAcc() {
+		this.cb = ::toCallCheckMemb;
+		ret = this.cb.call();
+		return this.expect(ret, 'callback');
+	}
+	
+	// callback methods
+	public toCall() { return true; }
+	public toCallWithArgs(string one, string two) { return two; }
+	public toCallWithEtc(string one, ...) { return one; }
+	public toCallWithEtcCnt(string one, ...) { return #etc; }
+	public toCallCheckMemb() { return lang.type(this.cb); }
+	
+	/*
+	 **********************************************************************
+	 * int tests
+	 *********************************************************************/
+	public intMaxVal() { return this.expect(Int.maxVal(), 9223372036854775807); }
+	public intMinVal() { return this.expect(Int.minVal(), -9223372036854775808); }
+	public intToDouble() { return this.expect((32).toDouble(), 32.0); }
+	public intToBool() { return this.expect((1).toBool(), true); }
+	public intToString() { return this.expect((32).toString(), "32"); }
+	public intCompare() { return this.expect((32).compare(32), 0); }
+	public intNumLeadingZeros() { return this.expect((10).numLeadingZeros(), 60); }
+	public intNumTrailingZeros() { return this.expect((10).numTrailingZeros(), 1); }
+	public intParse() { return this.expect(Int.parse("32"), 32); }
+	public intReverse() { return this.expect((100).reverse(), 2738188573441261568); }
+	public intRotateLeft() { return this.expect((100).rotateLeft(2), 400); }
+	public intRotateRight() { return this.expect((100).rotateRight(2), 25); }
+	public intSignum() { return this.expect((-125).signum(), -1); }
+	public intToBinary() { return this.expect((32).toBinary(), '100000'); }
+	public intToHex() { return this.expect((32).toHex(), '20'); }
+	public intToOctal() { return this.expect((32).toOctal(), '40'); }
+	public intToJson() { return this.expect((95678).toJson(), '95678'); }
+	
+	/*
+	 **********************************************************************
+	 * bool tests
+	 *********************************************************************/
+	public boolToInt() { return this.expect((true).toInt(), 1); }
+	public boolToDouble() { return this.expect((true).toDouble(), 1.0); }
+	public boolToString() { return this.expect((true).toString(), 'true'); }
+	public boolCompare() { return this.expect((true).compare(false), 1); }
+	public boolParse() { return this.expect(Bool.parse('true'), true); }
+	public boolToJson() { return this.expect((true).toJson(), 'true'); }
+	
+	/*
+	 **********************************************************************
+	 * double tests
+	 *********************************************************************/
+	public doubleMaxExponent() { return this.expect(Double.maxExp(), 1023.0); }
+	public doubleMinExponent() { return this.expect(Double.minExp(), -1022.0); }
+	public doubleMaxValue() { return this.expectDouble(Double.maxVal()); }
+	public doubleMinValue() { return this.expectDouble(Double.minVal()); }
+	public doubleMinNormalValue() { return this.expectDouble(Double.minNormal()); }
+	public doubleNaNValue() { return this.expectDouble(Double.nanVal()); }
+	public doubleNegInfinity() { return this.expect(Double.negInfinity() + '', '-Infinity'); }
+	public doublePosInfinity() { return this.expect(Double.posInfinity() + '', 'Infinity'); }
+	public doubleSize() { return this.expect(Double.size(), 64.0); }
+	public doubleToInt() { return this.expect((3.1415).toInt(), 3); }
+	public doubleToBool() { return this.expect((1.0).toBool(), true); }
+	public doubleToString() { return this.expect((3.1415).toString(), '3.1415'); }
+	public doubleCompare() { return this.expect((32.0).compare(24.0), 1); }
+	public doubleIsInfinite() { return this.expect(Double.posInfinity().isInfinite(), true); }
+	public doubleIsNaN() { return this.expect(Double.nanVal().isNan(), true); }
+	public doubleParse() { return this.expect(Double.parse('3.1415'), 3.1415); }
+	public doubleToHex() { return this.expect((3.1415).toHex(), '0x1.921cac083126fp1'); }
+	public doubleToJson() { return this.expect((3.1415).toJson(), '3.1415'); }
+	
+	/*
+	 **********************************************************************
+	 * string tests
+	 *********************************************************************/
+	public stringCharAt() { return this.expect("Tyler".charAt(1), 'y'); }
+	public stringCompare() { return this.expect("Ty".compare("Tyler"), -3); }
+	public stringCompareICase() { return this.expect("Tyler".compareICase("tyler"), 0); }
+	public stringConcat() { return this.expect("Ty".concat("ler"), "Tyler"); }
+	public stringContains() { return this.expect("Tyler".contains("yl"), true); }
+	public stringEndsWith() { return this.expect("Tyler".endsWith("er"), true); }
+	public stringEquals() { return this.expect("Tyler".equals("Tyler"), true); }
+	public stringEqualsICase() { return this.expect("Tyler".equalsICase("tyler"), true); }
+	public stringIndexOf() { return this.expect("Tyler".indexOf("ler"), 2); }
+	public stringIndexOfStart() { return this.expect("Tyler Durden".indexOfStart("e", 5), 10); }
+	public stringIsEmpty() { return this.expect("Tyler".isEmpty(), false); }
+	public stringLastIndexOf() { return this.expect("Tyler Durden".lastIndexOf("e"), 10); }
+	public stringLastIndexOfStart() { return this.expect("Tyler Durden".lastIndexOfStart("e", 5), 3); }
+	public stringMatches() { return this.expect("Tyler".matches("^Ty.*"), true); }
+	public stringReplace() { return this.expect("Tyler Durdon".replace("on", "en"), "Tyler Durden"); }
+	public stringReplaceFirstRegex() { return this.expect("Tyler".replaceFirstRegex("T.", "Ty"), "Tyler"); }
+	public stringReplaceRegex() { return this.expect("Tyler Durden".replaceRegex("e.", "on"), "Tylon Durdon"); }
+	public stringSplit() { return this.expect("one,two,three".split(",")[1], "two"); }
+	public stringStartsWith() { return this.expect("Tyler Durden".startsWith("Tyler "), true); }
+	public stringSubstr() { return this.expect("Tyler".substr(2), "ler"); }
+	public stringSubstrEnd() { return this.expect("Tyler".substr(2, 4), "le"); }
+	public stringToLower() { return this.expect("Tyler".toLower(), "tyler"); }
+	public stringToUpper() { return this.expect("Tyler".toUpper(), "TYLER"); }
+	public stringTrim() { return this.expect(" Tyler ".trim(), "Tyler"); }
+	public stringToJson() { return this.expect("Tyler Durdon".toJson(), "\"Tyler Durdon\""); }
+	
+	/*
+	 **********************************************************************
+	 * list tests
+	 *********************************************************************/
+	public listCreate() { this.tlist = new list(); return this.expectList(this.tlist); }
+	public listAdd() { this.tlist.add("one"); return this.expect(#this.tlist, 1); }
+	public listAddAll() { tmp = []; tmp @= "two"; tmp @= "three"; this.tlist.addAll(tmp); return this.expect(#this.tlist, 3); }
+	public listAddAllAt() { tmp = []; tmp @= "two"; tmp @= "three"; this.tlist.addAllAt(tmp, 1); return this.expect(this.tlist[2], 'three'); }
+	public listClone() { tmp = this.tlist.clone(); return this.expect(#tmp, 5); }
+	public listContainsObjRef() { tmp = "hi"; this.tlist @= tmp; return this.expect(this.tlist.containsObjRef(tmp), true); }
+	public listContains() { return this.expect(this.tlist.contains('hi'), true); }
+	public listGet() { return this.expect(this.tlist.get(#this.tlist - 1), "hi"); }
+	public listIndexOf() { tmp = "howdy"; this.tlist @= tmp; return this.expect(this.tlist.indexOf(tmp), 6); }
+	public listIsEmpty() { return this.expect(this.tlist.isEmpty(), false); }
+	public listRemove() { tmp = "howdy"; this.tlist @= tmp; this.tlist.remove(tmp); return this.expect(#this.tlist, 7); }
+	public listRemoveAt() { this.tlist.removeAt(6); return this.expect(#this.tlist, 6); }
+	public listRemoveAll() { tmp = []; tmp @= "one"; tmp @= "two"; this.tlist @= tmp[0]; this.tlist @= tmp[1]; this.tlist.removeAll(tmp); return this.expect(#this.tlist, 6); }
+	public listRetainAll() { tmp = []; tmp @= "one"; tmp @= "two"; this.tlist @= tmp[0]; this.tlist @= tmp[1]; this.tlist.retainAll(tmp); return this.expect(#this.tlist, 2); }
+	public listSet() { this.tlist @= "five"; this.tlist.set(2, "three"); return this.expect(this.tlist[2], "three"); }
+	public listSize() { return this.expect(this.tlist.size(), 3); }
+	public listSubList() { tmp = this.tlist.subList(0, 2); return this.expect(#tmp, 2); }
+	public listSort() { tmp = this.tlist.sort(); return this.expect(tmp[2], 'two'); }
+	public listSortAsc() { tmp = this.tlist.sortAsc(); return this.expect(tmp[2], 'one'); }
+	public listSortCustom() {
+		dogs = [];
+		dogs @= new dog("Labrador");
+		dogs @= new dog("Maltese");
+		dogs @= new dog("German Shepherd");
+		sortedDogs = dogs.sortCustom(::customComparator);
+		// TODO: Add list.join()!
+		return this.expect(sortedDogs[2].breed, "Maltese");
+	}
+	public customComparator(object d1, object d2) { return d1.breed.compare(d2.breed); }
+	public listClear() { this.tlist.clear(); return this.expect(#this.tlist, 0); }
+	public listToJson() { tmp = [ 1, 'dog', true ]; return this.expect(tmp.toJson(), """[1,"dog",true]"""); }
+	
+	/*
+	 **********************************************************************
+	 * map tests
+	 *********************************************************************/
+	public mapCreate() { this.tmap = new map(); return this.expectMap(this.tmap); }
+	public mapContainsKey() { this.tmap['name'] = "Tyler"; return this.expect(this.tmap.containsKey('name'), true); }
+	public mapContainsValue() { val = 'programmer'; this.tmap['occupation'] = val; return this.expect(this.tmap.containsVal(val), true); }
+	public mapGet() { return this.expect(this.tmap.get('occupation'), 'programmer'); }
+	public mapIsEmpty() { return this.expect(this.tmap.isEmpty(), false); }
+	public mapKeySet() { return this.expect(#this.tmap.keySet(), 2); }
+	public mapPut() { this.tmap.put('age', 32); return this.expect(this.tmap['age'], 32); }
+	public mapPutAll() { tm = {}; tm['1'] = 'one'; tm['2'] = 'two'; this.tmap.putAll(tm); return this.expect(this.tmap['1'], 'one'); }
+	public mapPutIfAbsent() { this.tmap.putIfAbsent('2', 'three'); return this.expect(this.tmap['2'], 'two'); }
+	public mapRemove() { this.tmap.remove('2'); return this.expect(this.tmap.containsKey('2'), false); }
+	public mapSize() { return this.expect(this.tmap.size(), #this.tmap); }
+	public mapValues() { mp = {}; mp['name'] = 'Tyler'; return this.expect(mp.values()[0], 'Tyler'); }
+	public mapClear() { this.tmap.clear(); return this.expect(#this.tmap, 0); }
+	public mapToJson() { tmp = { name: "Tyler", age: 35 }; return this.expect(tmp.toJson(), """{"name":"Tyler","age":35}"""); }
+	
+	/*
+	 **********************************************************************
+	 * object tests
+	 *********************************************************************/
+	public objectToJson() { 
+		try {
+			u = new user();
+			u.setName("Tyler", "Durden");
+			return this.expect(u.toJson(), """{"firstName":"Tyler","lastName":"Durden","emailAddress":{"address":""}}""");
+		} catch (e) { c.err(e); }
+	}
+	public objectPack() {
+		try {
+			u = new user();
+			u.setName("Tyler", "Durden");
+			return this.expect(u.pack(), """{"type":"user","members":{"firstName":{"type":"string","value":"Tyler"},"lastName":{"type":"string","value":"Durden"},"emailAddress":{"type":"email","members":{"address":{"type":"string","value":""}}}}}""");
+		} catch (e) { c.err(e); }
+	}
+	
+	/*
+	 **********************************************************************
+	 * json tests
+	 *********************************************************************/
+	public jsonParseString() {
+		jstr = """
+		{
+			"firstName": "Tyler",
+			"lastName": "Durden",
+			"age": 35,
+			"pi": 3.1415,
+			"vet": true,
+			"nextHouse": null,
+			"months": ["November", "December", "January"],
+			"loc": {
+				"latitude": 38.7521,
+				"longitude": -121.2880
+			}
+		}
+		""";
+		jobj = json.parse(jstr);
+		return this.expect(jobj instanceof 'map', true);
+	}
+	public jsonUnpack() {
+		jstr = """
+			{
+				"type":"user",
+				"members":{
+					"firstName":{
+						"type":"string",
+						"value":"Tyler"
+					},
+					"lastName":{
+						"type":"string",
+						"value":"Durden"
+					},
+					"emailAddress":{
+						"type":"email",
+						"members":{
+							"address":{
+								"type":"string",
+								"value":""
+							}
+						}
+					}
+				}
+			}
+		""";
+		u = json.unpack(jstr);
+		return this.expect(u instanceof 'user', true);
+	}
+	
+	
+	/*
+	 **********************************************************************
+	 * buffer tests
+	 *********************************************************************/
+	public bufferInstantiate() { this.buff = new buffer(); return this.expectObject(this.buff, 'buffer'); }
+	public bufferSize() { return this.expect(this.buff.size(), 1024); }
+	public bufferAddString() { this.buff.addString("welcome"); return this.expect(this.buff.getStringAt(this.buff.getWriteCursor()), "welcome"); }
+	public bufferAddByte() { this.buff.addByte(10); return this.expect(this.buff.getByte(), 10); }
+	public bufferAddUByte() { this.buff.addUByte(15); return this.expect(this.buff.getUByte(), 15); }
+	public bufferAddShort() { this.buff.addShort(12345); return this.expect(this.buff.getShort(), 12345); }
+	public bufferAddUShort() { this.buff.addUShort(12345); return this.expect(this.buff.getUShort(), 12345); }
+	public bufferAddInt() { this.buff.addInt(12345678); return this.expect(this.buff.getInt(), 12345678); }
+	public bufferAddUInt() { this.buff.addUInt(12345678); return this.expect(this.buff.getUInt(), 12345678); }
+	public bufferAddLong() { this.buff.addLong(1234567890); return this.expect(this.buff.getLong(), 1234567890); }
+	public bufferAddFloat() { this.buff.addFloat(123.456); return this.expect(math.round(this.buff.getFloat()), 123.0); }
+	public bufferAddDouble() { this.buff.addDouble(123456.123456); return this.expect(this.buff.getDouble(), 123456.123456); }
+	public bufferGetWriteCursor() { return this.expect(this.buff.getWriteCursor(), 41); }
+	public bufferGetReadCursor() { return this.expect(this.buff.getReadCursor(), 37); }
+	public bufferSetString() { this.buff.setString("Hello World"); return this.expect(this.buff.getString(), "Hello World"); }
+	public bufferSetByte() { this.buff = new buffer(); this.buff.setByte(0, 10); return this.expect(this.buff.getByte(0), 10); }
+	public bufferSetUByte() { this.buff.setUByte(1, 64); return this.expect(this.buff.getUByte(1), 64); }
+	public bufferSetShort() { this.buff.setShort(2, 1000); return this.expect(this.buff.getShort(2), 1000); }
+	public bufferSetUShort() { this.buff.setUShort(4, 1024); return this.expect(this.buff.getUShort(4), 1024); }
+	public bufferSetInt() { this.buff.setInt(6, 123456); return this.expect(this.buff.getInt(6), 123456); }
+	public bufferSetUInt() { this.buff.setUInt(10, 1234567); return this.expect(this.buff.getUInt(10), 1234567); }
+	public bufferSetLong() { this.buff.setLong(14, 1234567890); return this.expect(this.buff.getLong(14), 1234567890); }
+	public bufferSetFloat() { this.buff.setFloat(22, 123.456); return this.expect(math.round(this.buff.getFloat(22)), 123.0); }
+	public bufferSetDouble() { this.buff.setDouble(26, 12345.12345); return this.expect(this.buff.getDouble(26), 12345.12345); }
+	public bufferCopyFrom() { tmp = new buffer(); tmp.copyFrom(0, this.buff, 0, 34); return this.expect(tmp.getDouble(26), 12345.12345); }
+	public bufferCopyTo() { tmp = new buffer(); this.buff.copyTo(0, tmp, 0, 34); return this.expect(tmp.getDouble(26), 12345.12345); }
+	public bufferByteToBinary() { return this.expect(this.buff.byteToBinary(0), '00001010'); }
+	public bufferShortToBinary() { return this.expect(this.buff.shortToBinary(2), '0000001111101000'); }
+	public bufferIntToBinary() { return this.expect(this.buff.intToBinary(6), '00000000000000011110001001000000'); }
+	public bufferLongToBinary() { return this.expect(this.buff.longToBinary(14), '0000000000000000000000000000000001001001100101100000001011010010'); }
+	public bufferFloatToBinary() { return this.expect(this.buff.floatToBinary(22), '01000010111101101110100101111001'); }
+	public bufferDoubleToBinary() { return this.expect(this.buff.doubleToBinary(26), '0100000011001000000111001000111111001101001101011010100001011000'); }
+	public bufferClear() { this.buff.clear(); return this.expect(this.buff.getByte(0), 0); }
+	
+	/*
+	 **********************************************************************
+	 * date tests
+	 *********************************************************************/
+	public dateInstantiate() { this.dt = new date(); return this.expectObject(this.dt, 'date'); }
+	public dateSetHours() { this.dt.setHours(1); return this.expect(this.dt.getHours(), 1); }
+	public dateSetMinutes() { this.dt.setMinutes(30); return this.expect(this.dt.getMinutes(), 30); }
+	public dateSetSeconds() { this.dt.setSeconds(30); return this.expect(this.dt.getSeconds(), 30); }
+	public dateSetTime() { this.dt.setTime(3600); return this.expect(this.dt.getTime(), 3600); }
+	public dateToString() { return this.expectString(this.dt.toString()); }
+	public dateParse() { this.dt.parse("2014-12-31 23:59:59", "yyyy-MM-dd HH:mm:ss"); return this.expectObject(this.dt, 'date'); }
+	public dateFormat() { return this.expect(this.dt.format("yyyy-MM-dd HH:mm:ss"), "2014-12-31 23:59:59"); }
+	public dateIsEpoch() { this.dt = new date(0); return this.expect(this.dt.isEpoch(), true); }
+	
+	/*
+	 **********************************************************************
+	 * security manager tests
+	 *********************************************************************/
+	public secmanGetProp() { return this.expect(secman.getProp('os.info.view'), false); }
+	public secmanSetProp() { ex = ''; try { secman.setProp('file.write', true); } catch (e) { ex = e.getText(); } return this.expect(ex, "securitymanager.getProp(): Security exception, action 'securitymanager.property.set' not permitted."); }
+	public secmanKeySet() { return this.expect(secman.keySet().contains('securitymanager.instantiate'), true); }
+	public secmanGetMap() { return this.expect(secman.getMap().containsKey('securitymanager.instantiate'), true); }
+	public secmanInstantiate() { sman = new securitymanager(); return this.expect(sman instanceof 'securitymanager', true); }
+	public secmanSetProp() { sman = new securitymanager(); sman.setProp('secman.test', true); return this.expect(sman.getProp('secman.test'), true); }
+	public secmanSetMap() {
+		mp = {
+			'test.1': true,
+			'test.2': false,
+			'test.3': 'some text here ...'
+		};
+		sman = new securitymanager();
+		sman.setMap(mp);
+		return this.expect(sman.getProp('test.3') == 'some text here ...', true);
+	}
+	
+	/*
+	 **********************************************************************
+	 * resource loading tests
+	 *********************************************************************/
+	public resNewInctest() { tobj = new inctest(); return this.expect(tobj instanceof 'inctest', true); }
+	public langClassAussomdoc() {
+	    tobj = lang.getClassAussomdoc("user");
+	    return this.expect(tobj.className == "user", true);
+	}
+}
