@@ -136,7 +136,7 @@ public class Main {
 	 */
 	public static void printInfo() {
 		String rstr = "";
-		rstr += "Aussom-Lang Version " + Universe.getAussomVersion()  + "\n";
+		rstr += "Aussom Version " + Universe.getAussomVersion()  + "\n";
 		rstr += "Copyright 2020 Austin Lehman\n";
 		rstr += "Apache License Version 2\n";
 		System.out.println(rstr);
