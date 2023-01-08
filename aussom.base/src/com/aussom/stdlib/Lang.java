@@ -69,11 +69,11 @@ public class Lang {
 	private void init() {
 		this.jarFile =  new File(getClass().getProtectionDomain().getCodeSource().getLocation().getPath());
 		
-		langIncludes.put("lang.aus", Util.loadResource("/com/aussom/stdlib/ca/lang.aus"));
-		langIncludes.put("sys.aus", Util.loadResource("/com/aussom/stdlib/ca/sys.aus"));
-		langIncludes.put("reflect.aus", Util.loadResource("/com/aussom/stdlib/ca/reflect.aus"));
-		langIncludes.put("cunit.aus", Util.loadResource("/com/aussom/stdlib/ca/cunit.aus"));
-		langIncludes.put("math.aus", Util.loadResource("/com/aussom/stdlib/ca/math.aus"));
+		langIncludes.put("lang.aus", Util.loadResource("/com/aussom/stdlib/aus/lang.aus"));
+		langIncludes.put("sys.aus", Util.loadResource("/com/aussom/stdlib/aus/sys.aus"));
+		langIncludes.put("reflect.aus", Util.loadResource("/com/aussom/stdlib/aus/reflect.aus"));
+		langIncludes.put("cunit.aus", Util.loadResource("/com/aussom/stdlib/aus/cunit.aus"));
+		langIncludes.put("math.aus", Util.loadResource("/com/aussom/stdlib/aus/math.aus"));
 	}
 	
 	public List<String> listResourceDirectory(String Path) throws IOException, URISyntaxException {

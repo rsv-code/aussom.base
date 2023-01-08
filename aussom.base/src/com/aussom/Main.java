@@ -95,7 +95,7 @@ public class Main {
 		// eng.setDebug(true);
 
 		// Add resource include path for testing.
-		eng.addResourceIncludePath("/com/aussom/stdlib/ca/");
+		eng.addResourceIncludePath("/com/aussom/stdlib/aus/");
 
 		// Parse the provided file name.
 		eng.parseFile(ScriptFile);
@@ -115,7 +115,7 @@ public class Main {
 		// eng.setDebug(true);
 
 		// Add resource include path for testing.
-		eng.addResourceIncludePath("/com/aussom/stdlib/ca/");
+		eng.addResourceIncludePath("/com/aussom/stdlib/aus/");
 
 		// Parse the provided file name.
 		eng.parseFile(ScriptFile);
@@ -137,7 +137,7 @@ public class Main {
 	public static void printInfo() {
 		String rstr = "";
 		rstr += "Aussom Version " + Universe.getAussomVersion()  + "\n";
-		rstr += "Copyright 2020 Austin Lehman\n";
+		rstr += "Copyright 2023 Austin Lehman\n";
 		rstr += "Apache License Version 2\n";
 		System.out.println(rstr);
 	}
