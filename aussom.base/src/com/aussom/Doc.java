@@ -44,11 +44,11 @@ public class Doc {
 				AussomMap cdoc = (AussomMap)ac.getAussomdoc();
 
 				String staticStr = "";
-				if (cdoc.getValue().get("isStatic").getNumericBool()) {
+				if (cdoc.getValue().get("isStatic") != null && cdoc.getValue().get("isStatic").getNumericBool()) {
 					staticStr = "`static` ";
 				}
 				String externStr = "";
-				if (cdoc.getValue().get("isExtern").getNumericBool()) {
+				if (cdoc.getValue().get("isExtern") != null && cdoc.getValue().get("isExtern").getNumericBool()) {
 					externStr = "(extern: " + cdoc.getValue().get("externClassName").getValueString() + ") ";
 				}
 				String extendedStr = "";
@@ -60,8 +60,10 @@ public class Doc {
 					}
 					extendedStr += "** ";
 				}
-				ret += "## class: " + cdoc.getValue().get("className").getValueString() + "\n";
-				ret += "[" + cdoc.getValue().get("lineNumber").getNumericInt() + ":" + cdoc.getValue().get("colNumber").getNumericInt() + "] " + staticStr + externStr + extendedStr + "\n";
+				if (cdoc.getValue().get("className") != null)
+					ret += "## class: " + cdoc.getValue().get("className").getValueString() + "\n";
+				if (cdoc.getValue().get("lineNumber") != null && cdoc.getValue().get("colNumber") != null)
+					ret += "[" + cdoc.getValue().get("lineNumber").getNumericInt() + ":" + cdoc.getValue().get("colNumber").getNumericInt() + "] " + staticStr + externStr + extendedStr + "\n";
 				ret += Doc.getAussomdocMarkdownMembers(cdoc);
 				ret += Doc.getAussomdocMarkdownMethods(cdoc);
 
@@ -86,12 +88,14 @@ public class Doc {
 			ret += "#### Members\n";
 			for (int i = 0; i < lst.getValue().size(); i++) {
 				AussomMap memb = (AussomMap)lst.getValue().get(i);
-				ret += "- **" + memb.getValue().get("name").getValueString() + "**\n";
+				if (memb.getValue().get("name") != null)
+					ret += "- **" + memb.getValue().get("name").getValueString() + "**\n";
 
-				if (memb.getValue().get("value").getType() != cType.cNull) {
+				if (memb.getValue().get("value") != null && memb.getValue().get("value").getType() != cType.cNull) {
 					AussomMap docMap = (AussomMap)memb.getValue().get("value");
 					AussomList docList = (AussomList)docMap.getValue().get("docList");
-					ret += Doc.getAussomdocMarkdownDoclist(docList);
+					if (docList != null)
+						ret += Doc.getAussomdocMarkdownDoclist(docList);
 				}
 			}
 			ret += "\n";
@@ -108,20 +112,23 @@ public class Doc {
 	private static String getAussomdocMarkdownMethods(AussomMap cdoc) {
 		String ret = "";
 		AussomList lst = (AussomList) cdoc.getValue().get("methods");
-		if (lst.getValue().size() > 0) {
+		if (lst != null && lst.getValue().size() > 0) {
 			ret += "#### Methods\n";
 			for (int i = 0; i < lst.getValue().size(); i++) {
 				AussomMap methb = (AussomMap)lst.getValue().get(i);
-				ret += "- **" + methb.getValue().get("name").getValueString() + "** (";
+				if (methb.getValue().get("name") != null)
+					ret += "- **" + methb.getValue().get("name").getValueString() + "** (";
 
 				AussomList margs = (AussomList)methb.getValue().get("args");
-				ret += getAussomdocMarkdownMethodArgs(margs);
+				if (margs != null)
+					ret += getAussomdocMarkdownMethodArgs(margs);
 
 				ret += ")\n";
 				if (methb.getValue().containsKey("aussomDoc")) {
 					AussomMap docMap = (AussomMap)methb.getValue().get("aussomDoc");
 					AussomList docList = (AussomList)docMap.getValue().get("docList");
-					ret += Doc.getAussomdocMarkdownDoclist(docList);
+					if (docList != null)
+						ret += Doc.getAussomdocMarkdownDoclist(docList);
 				} else {
 					ret += "\n";
 				}
@@ -141,11 +148,13 @@ public class Doc {
 		String ret = "";
 		for (AussomType cobj : docList.getValue()) {
 			AussomMap docItem = (AussomMap) cobj;
-			if (docItem.getValue().get("type").getValueString().toLowerCase().equals("annotation")) {
-				ret += "\t- **@" + docItem.getValue().get("tagName").getValueString() + "** `" + docItem.getValue().get("tagValue").getValueString() + "` " + docItem.getValue().get("tagDescription").getValueString() + "\n";
+			if (docItem.getValue().get("type") != null && docItem.getValue().get("type").getValueString().toLowerCase().equals("annotation")) {
+				if (docItem.getValue().get("tagName") != null && docItem.getValue().get("tagValue") != null && docItem.getValue().get("tagDescription") != null)
+					ret += "\t- **@" + docItem.getValue().get("tagName").getValueString() + "** `" + docItem.getValue().get("tagValue").getValueString() + "` " + docItem.getValue().get("tagDescription").getValueString() + "\n";
 			} else {
 				// Text node
-				ret += "\t> " + docItem.getValue().get("text").getValueString() + "\n";
+				if (docItem.getValue().get("text") != null)
+					ret += "\t> " + docItem.getValue().get("text").getValueString() + "\n";
 			}
 		}
 		return ret;
@@ -165,24 +174,31 @@ public class Doc {
 				AussomMap arg = (AussomMap) margs.getValue().get(j);
 				String argStr = "";
 				if (arg.contains("specifiedType")) {
-					String type = arg.getValue().get("specifiedType").getValueString();
-					if (!type.equals("undef")) {
-						argStr += " " + type;
+					if (arg.getValue().get("specifiedType") != null) {
+						String type = arg.getValue().get("specifiedType").getValueString();
+						if (!type.equals("undef")) {
+							argStr += " " + type;
+						}
 					}
 				}
 				if (arg.contains("name")) {
-					argStr += " " + arg.getValue().get("name").getValueString();
+					if (arg.getValue().get("name") != null)
+						argStr += " " + arg.getValue().get("name").getValueString();
 				}
 				if (arg.contains("type")) {
-					String type = arg.getValue().get("type").getValueString();
-					if (type.equals("etcetera")) {
-						argStr += "...";
+					if (arg.getValue().get("type") != null) {
+						String type = arg.getValue().get("type").getValueString();
+						if (type.equals("etcetera")) {
+							argStr += "...";
+						}
 					}
 				}
 
 				if (arg.contains("valueType")) {
 					AussomType valType = arg.getValue().get("value");
-					String val = arg.getValue().get("value").getValueString();
+					String val = "";
+					if (arg.getValue().get("value") != null)
+						val = arg.getValue().get("value").getValueString();
 
 					if (valType instanceof AussomString) {
 						argStr += " = \"" + val + "\"";
