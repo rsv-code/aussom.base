@@ -1,4 +1,4 @@
-![alt tag](aussom.base/docs/img/logo.jpg)
+# Aussom
 
 This is a base interpreter implementation of Aussom language. You can run the interpreter from the command line, but 
 this package was built to be embedded and provides only the most common language and standard library functionality.
